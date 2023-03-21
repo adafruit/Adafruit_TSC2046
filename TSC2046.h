@@ -1,0 +1,62 @@
+// TI TSC2046 touchscreen library.
+// Author: Qyriad <qyriad@qyriad.me>
+// License: MIT
+
+#ifndef TSC2046_H
+#define TSC2046_H
+
+#if ARDUINO >= 100
+ #include "Arduino.h"
+ #include "Print.h"
+#else
+ #include "WProgram.h"
+#endif
+
+#include <stdint.h>
+#include <Adafruit_BusIO_Register.h>
+#include <Adafruit_SPIDevice.h>
+
+class TSPoint {
+public:
+    TSPoint(int16_t x, int16_t y, int16_t z);
+
+    bool operator==(TSPoint rhs);
+    bool operator!=(TSPoint rhs);
+
+    int16_t x;
+    int16_t y;
+    int16_t z;
+};
+
+class Adafruit_TSC2046 {
+public:
+  Adafruit_TSC2046(int32_t sensorId);
+
+  bool begin(int spiChipSelect, uint16_t rDiffX, SPIClass &spi = SPI, uint32_t spiFrequency = 2L * 1000L * 1000L);
+
+  TSPoint getPoint();
+
+private:
+  SPIClass *_spi;
+  int _spiCS;
+  int32_t _sensorId;
+  int64_t _spiFrequency;
+
+  uint16_t readDfr(uint8_t channelSelect);
+  uint16_t readSer(uint8_t channelSelect);
+};
+
+class CommandBits {
+public:
+  CommandBits();
+  CommandBits(uint8_t value);
+  void addBit(bool value);
+  void addBits(uint8_t value, uint8_t length);
+
+  uint8_t command;
+
+private:
+  uint8_t _currentIndex;
+};
+
+#endif
