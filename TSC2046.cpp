@@ -34,10 +34,28 @@
 #define CMD_POWER_INDEX   (1)
 #define CMD_POWER_LEN     (2)
 
-TSPoint::TSPoint(int16_t x, int16_t y, int16_t z) {
-  this->x = x;
-  this->y = y;
-  this->z = z;
+// LSB_SIZE = V_REF / (2 ** ADC_BITS)
+// In 12-bit conversion mode: LSB_SIZE = V_REF / 4096
+// In  8-bit conversion mode: LSB_SIZE = V_REF / 256
+
+
+TSPoint::TSPoint(int16_t x, int16_t y, int16_t z1, int16_t z2) {
+  raw_x = x;
+  raw_y = y;
+  raw_z1 = z1;
+  raw_z2 = z2;
+}
+
+float TSPoint::x() {
+  return (raw_x * 3.3) / 4096;
+}
+
+float TSPoint::y() {
+  return (raw_y * 3.3) / 4096;
+}
+
+float TSPoint::z() {
+  return raw_z1 / 4096;
 }
 
 
@@ -53,54 +71,7 @@ bool Adafruit_TSC2046::begin(int spiChipSelect, uint16_t rDiffX, SPIClass &spi, 
   return true;
 }
 
-// spi_dev = new Adafruit_SPIDevice(chipSelect, freq, bitorder, spimode, SPIClass);
-
 TSPoint Adafruit_TSC2046::getPoint() {
-
-  //CommandBits readXCmd;
-  //readXCmd.addBit(1); // Start bit.
-  //readXCmd.addBits(REG_DFR_X_POS, 3); // A2:A0: read X position in DFR mode.
-  //readXCmd.addBit(1); // MODE: use 12-bit conversion mode.
-  //readXCmd.addBit(0); // SER/DFR': use differential reference mode.
-  //readXCmd.addBit(0); // PD1: Internal reference voltage off.
-  //readXCmd.addBit(1); // PD0: ADC on.
-
-  //auto spiDev = new Adafruit_SPIDevice(_spiCS, _spiFrequency, SPI_BITORDER_MSBFIRST, SPI_MODE0, _spi);
-
-  //Adafruit_BusIO_Register readXReg = Adafruit_BusIO_Register(
-    //spiDev,
-    //[> regAddr <] readXCmd.command,
-    //[> regType <] ADDRBIT8_HIGH_TOREAD,
-    //[> width <] 2, // For 12-bit reads.
-    //[> byteorder <] LSBFIRST,
-    //[> addressWidth <] 1
-  //);
-
-  //Adafruit_BusIO_RegisterBits resultRange = Adafruit_BusIO_RegisterBits(
-    //[> reg <] &readXReg,
-    //[> bits <] 12,
-    //[> shift <] 0
-  //);
-
-  //uint16_t xResult = resultRange.read();
-
-  //delete spiDev;
-
-  uint16_t xResult = readDfr(REG_DFR_X_POS);
-  uint16_t yResult = readDfr(REG_DFR_Y_POS);
-
-  // FIXME: Calculate pressure.
-  return TSPoint(xResult, yResult, 0);
-}
-
-uint16_t Adafruit_TSC2046::readDfr(uint8_t channelSelect) {
-  CommandBits readCmd;
-  readCmd.addBit(1); // START bit, always 1.
-  readCmd.addBits(channelSelect, 3); // A2:A0.
-  readCmd.addBit(1); // MODE: use 12-bit conversion mode.
-  readCmd.addBit(0); // SER/DFR': use differential reference mode.
-  readCmd.addBit(0); // PD1: internal reference voltage off.
-  readCmd.addBit(1); // PD0: ADC on.
 
   Adafruit_SPIDevice spiDev = Adafruit_SPIDevice(
     _spiCS, // cspin
@@ -110,26 +81,101 @@ uint16_t Adafruit_TSC2046::readDfr(uint8_t channelSelect) {
     _spi // theSPI
   );
 
-  Adafruit_BusIO_Register cmdReg = Adafruit_BusIO_Register(
+  spiDev.begin();
+
+  int16_t xResult = readDfr(spiDev, REG_DFR_X_POS);
+  delay(100);
+  int16_t yResult = readDfr(spiDev, REG_DFR_Y_POS);
+  delay(100);
+  int16_t z1Result = readDfr(spiDev, REG_DFR_Z1_POS);
+  delay(100);
+  int16_t z2Result = readDfr(spiDev, REG_DFR_Z2_POS);
+
+  // FIXME: Calculate pressure.
+  return TSPoint(xResult, yResult, z1Result, z2Result);
+}
+
+uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev, uint8_t channelSelect) {
+
+  CommandBits controlCmd;
+  controlCmd.addBit(1); // START bit, always 1.
+  controlCmd.addBits(channelSelect, 3); // A2:A0.
+  controlCmd.addBit(0); // 8/12': conversion mode.
+  controlCmd.addBit(0); // SER/DFR': what to use for VREF.
+  controlCmd.addBit(0); // PD1: Enable/disable' internal VREF.
+  controlCmd.addBit(1); // PD0: ADC on/off'.
+
+
+  Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register (
     &spiDev,
-    readCmd.command, // red_addr
+    controlCmd.command, // reg_addr
     ADDRBIT8_HIGH_TOREAD, // reg_type
-    2 // Width: 2, for 12-bit reads.
+    2, // Width: 2, to get the 12-bits we need.
+    // It's a 12-bit value with the most-significant BIT first.
+    // Therefore, the first 1-byte read will read the 8 most-significant bits,
+    // and the next 1-byte read will read the 4 least-significant bits.
+    MSBFIRST,
+    1 // address_with
   );
 
-  Adafruit_BusIO_RegisterBits resultRange = Adafruit_BusIO_RegisterBits(
-    &cmdReg, // reg
-    12, // bits
-    0 // shift
-  );
+  uint8_t spiOutputBuffer[2];
+  controlReg.read(spiOutputBuffer, 2);
 
-  uint16_t result = resultRange.read();
+  // Will contain bits 11:5. See parse12BitValue for why.
+  uint8_t upperByte = spiOutputBuffer[0];
+  // Will contain bits 4:0. See parse12BitValue for why.
+  uint8_t lowerByte = spiOutputBuffer[1];
+
+  uint16_t result = parse12BitValue(upperByte, lowerByte);
 
   return result;
 }
 
-CommandBits::CommandBits() {
-  command = 0;
+static uint16_t Adafruit_TSC2046::parse12BitValue(uint8_t spiUpperByte, uint8_t spiLowerByte) {
+
+  // `spiUpperByte` will contain bits 11:5.
+  // `spiLowerByte` will contain bits 4:0.
+  // See below for why.
+
+  /*
+                                 Upper Byte                                         Lower Byte
+                 -------------------------------------------------  -------------------------------------------------
+    SPI Read:    |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |  |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
+
+    12-bit Map:  |  X  |  11 |  10 |  9  |  8  |  7  |  6  |  5  |  |  4  |  3  |  2  |  1  |  0  |  X  |  X  |  X  |
+
+    Want:        |  X  |  X  |  X  |  12 |  11 |  10 |  9  |  8  |  |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
+
+    Xs are "don't care" values that we don't want in our result, so we should mask them out.
+
+    "SPI Read" are the raw `spiUpperByte` and `spiLowerByte` we get over SPI.
+
+    "12-bit Map" are the where each bit of the 12-bit number we actually want are placed *in* the data we read
+    over SPI. So the bit 11 (0-indexed) of the 12-bit number is found in bit 6 of `spiUpperByte`.
+    Why is bit 7 of the Upper Byte an X? Because there is *one* extra clock cycle after we finish sending the
+    control byte before the TSC2046 starts sending out the converted data. BusIO captures *immediately* after
+    the SPI command is finished, though, so the very first bit (the most-significant bit, in BusIO's "eyes")
+    is not the most-significant bit of the 12-bit value, but instead an "empty" value that
+    1) we need to mask out, and 2) pads the start of the 12-bit value by one bit index.
+
+    "Want" is what we need to bit-shift and mask to get, with the numbers being the indexes of the overall 12-bit
+    value.
+   */
+
+  // Mask out bit 7 of `spiUpperByte`, which is an "X".
+  spiUpperByte &= 0x7F; // 0b0111_1111;
+
+  // Mask out the least significant 3 bits (bits 2, 1, and 0) of `spiLowerByte`, which are also "X"s.
+  spiLowerByte &= 0xF8; // 0b1111_1000;
+
+  // Bit 6 of `spiUpperByte` needs to become bit 11 of the uint16_t,
+  // so we shift `spiUpperByte` LEFT by 5 (11 - 6 = 5).
+  // Meanwhile, bit 3 of `spiLowerByte` needs to become bit 0 of the uint16_t,
+  // so we shift that RIGHT by 3 (3 - 0 = 3).
+  uint16_t finalResult = (spiUpperByte << 5) | (spiLowerByte >> 3);
+
+  // Finally, we have the 12-bit number we read as a uint16_t.
+  return finalResult;
 }
 
 CommandBits::CommandBits(uint8_t value) {
@@ -137,21 +183,13 @@ CommandBits::CommandBits(uint8_t value) {
 }
 
 void CommandBits::addBit(bool value) {
-  command |= (value << _currentIndex);
-  _currentIndex += 1;
-
-  if (_currentIndex > 7) {
-    _currentIndex = 0;
-  }
+  uint8_t bit = value & 1;
+  command = (command << 1) | bit;
 }
 
 void CommandBits::addBits(uint8_t value, uint8_t length) {
-  // NOTE: If performance is *really* needed and the complier isn't optimizing
-  // this function well enough, this for-loop can be changed to:
-  // command |= ~(0xFF << length) & value; _currentIndex += length
-  // at the expense of losing overflow-wrapping.
+  uint8_t mask = (1 << length) - 1;
+  uint8_t bits = value & mask;
 
-  for (int i = 0; i < length; ++i) {
-    addBit(value);
-  }
+  command = (command << length) | bits;
 }
