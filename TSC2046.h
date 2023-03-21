@@ -18,14 +18,19 @@
 
 class TSPoint {
 public:
-    TSPoint(int16_t x, int16_t y, int16_t z);
+    TSPoint(int16_t x, int16_t y, int16_t z1, int16_t z2);
 
     bool operator==(TSPoint rhs);
     bool operator!=(TSPoint rhs);
 
-    int16_t x;
-    int16_t y;
-    int16_t z;
+    int16_t raw_x;
+    int16_t raw_y;
+    int16_t raw_z1;
+    int16_t raw_z2;
+
+    float x();
+    float y();
+    float z();
 };
 
 class Adafruit_TSC2046 {
@@ -42,21 +47,17 @@ private:
   int32_t _sensorId;
   int64_t _spiFrequency;
 
-  uint16_t readDfr(uint8_t channelSelect);
+  uint16_t readDfr(Adafruit_SPIDevice &spiDev, uint8_t channelSelect);
   uint16_t readSer(uint8_t channelSelect);
 };
 
 class CommandBits {
 public:
-  CommandBits();
-  CommandBits(uint8_t value);
+  CommandBits(uint8_t value = 0);
   void addBit(bool value);
   void addBits(uint8_t value, uint8_t length);
 
   uint8_t command;
-
-private:
-  uint8_t _currentIndex;
 };
 
 #endif
