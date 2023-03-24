@@ -9,7 +9,7 @@ Adafruit_TSC2046 touchscreen = Adafruit_TSC2046(2113);
 
 void setup() {
   Serial.begin(9600);
-  touchscreen.begin(10, 500);
+  touchscreen.begin(10, 400);
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
@@ -20,19 +20,14 @@ void loop() {
 
   auto point = touchscreen.getPoint();
 
-  /*Serial.print(point.x());*/
-  /*Serial.println(point.y());*/
 
   Serial.print(point.raw_x);
   Serial.print("\t");
   Serial.print(point.raw_y);
   Serial.print("\t");
-  Serial.print(point.raw_z1);
-  Serial.print("\t");
-  Serial.print(point.raw_z2);
+  Serial.print(point.raw_z);
   Serial.print("\n");
 
   delay(200);
-  /*Serial.println("Hello, world!");*/
   digitalWrite(LED_BUILTIN, LOW);
 }
