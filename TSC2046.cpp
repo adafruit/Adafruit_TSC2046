@@ -1,61 +1,33 @@
 #include "TSC2046.h"
 
-#define REG_SER_TEMP0 (0b000)
-#define REG_SER_Y_POS (0b001)
-#define REG_SER_VBAT (0b010)
-#define REG_SER_Z1_POS (0b011)
-#define REG_SER_Z2_POS (0b100)
-#define REG_SER_X_POS (0b101)
-#define REG_SER_AUX (0b110)
-#define REG_SER_TEMP1 (0b111)
+// Multiplexer addresses for the various outputs in single-ended reference mode.
+#define ADDR_SER_TEMP0 (0b000)
+#define ADDR_SER_Y_POS (0b001)
+#define ADDR_SER_VBAT (0b010)
+#define ADDR_SER_Z1_POS (0b011)
+#define ADDR_SER_Z2_POS (0b100)
+#define ADDR_SER_X_POS (0b101)
+#define ADDR_SER_AUX (0b110)
+#define ADDR_SER_TEMP1 (0b111)
 
-#define REG_DFR_Y_POS (0b001)
-#define REG_DFR_Z1_POS (0b011)
-#define REG_DFR_Z2_POS (0b100)
-#define REG_DFR_X_POS (0b101)
-
-#define REG_POS_Z1_REF_OFF_ADC_ON_DIFF (0b10111001)
-
-/*! @brief The index of the bit of the command word that indicates the start of
- * a control byte. Must always be 1.
- */
-#define CMD_START_INDEX (7)
-#define CMD_START_LEN (1)
-
-#define CMD_ADDR_INDEX (6)
-#define CMD_ADDR_LEN (3)
-
-#define CMD_MODE_INDEX (3)
-#define CMD_MODE_LEN (1)
-
-#define CMD_SER_DFR_INDEX (2)
-#define CMD_SER_DFR_LEN (1)
-
-#define CMD_POWER_INDEX (1)
-#define CMD_POWER_LEN (2)
-
-// LSB_SIZE = V_REF / (2 ** ADC_BITS)
-// In 12-bit conversion mode: LSB_SIZE = V_REF / 4096
-// In  8-bit conversion mode: LSB_SIZE = V_REF / 256
+// Multiplexer addresses for the various outputs in differential reference mode.
+#define ADDR_DFR_Y_POS (0b001)
+#define ADDR_DFR_Z1_POS (0b011)
+#define ADDR_DFR_Z2_POS (0b100)
+#define ADDR_DFR_X_POS (0b101)
 
 TSPoint::TSPoint(int16_t x, int16_t y, float z) {
-  raw_x = x;
-  raw_y = y;
-  raw_z = z;
+  this->x = x;
+  this->y = y;
+  this->z = z;
 }
 
-float TSPoint::x() { return (raw_x * 3.3) / 4096; }
+float TSPoint::xPercent() { return x / 4096.f; }
 
-float TSPoint::y() { return (raw_y * 3.3) / 4096; }
+float TSPoint::yPercent() { return y / 4096.f; }
 
-float TSPoint::z() {
-  return raw_z / 4096;
-}
-
-Adafruit_TSC2046::Adafruit_TSC2046(int32_t sensorId) { _sensorId = sensorId; }
-
-bool Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance, SPIClass &spi,
-                             uint32_t spiFrequency) {
+void Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance,
+                             SPIClass &spi, uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
   _spi = &spi;
   _spiFrequency = spiFrequency;
@@ -66,20 +38,28 @@ bool Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance, SPIClass &
 
 TSPoint Adafruit_TSC2046::getPoint() {
 
+  // Regarding SPI mode, timing diagrams on the datasheet show DCLK idling LOW,
+  // which means the leading edge is a rising edge, which means CPOL = 0.
+  // For DOUT (MISO/CIPO) the datasheet says "data are shifted on the falling
+  // edge of DCLK", and for DIN it says "data are latched on the rising edge
+  // of DCLK", which means OUT side changes on the trailing edge of the clock
+  // and the IN side changes on/after the leading edge of the clock, which
+  // means CPHA = 0.
+  // Therefore, our SPI mode is 0.
   Adafruit_SPIDevice spiDev =
       Adafruit_SPIDevice(_spiCS,                // cspin
                          _spiFrequency,         // freq
                          SPI_BITORDER_MSBFIRST, // dataOrder
-                         SPI_MODE0,             // dataMode FIXME: document why
+                         SPI_MODE0,             // dataMode
                          _spi                   // theSPI
       );
 
   spiDev.begin();
 
-  int16_t xResult = readDfr(spiDev, REG_DFR_X_POS);
-  int16_t yResult = readDfr(spiDev, REG_DFR_Y_POS);
-  int16_t z1Result = readDfr(spiDev, REG_DFR_Z1_POS);
-  int16_t z2Result = readDfr(spiDev, REG_DFR_Z2_POS);
+  int16_t xResult = readDfr(spiDev, ADDR_DFR_X_POS);
+  int16_t yResult = readDfr(spiDev, ADDR_DFR_Y_POS);
+  int16_t z1Result = readDfr(spiDev, ADDR_DFR_Z1_POS);
+  int16_t z2Result = readDfr(spiDev, ADDR_DFR_Z2_POS);
 
   // The datasheet gives two ways to calculate pressure. We're going to use the
   // one that requires the least information from the user:
@@ -88,7 +68,8 @@ TSPoint Adafruit_TSC2046::getPoint() {
   // So this requires knowing the X-Plate resistance, which thankfully we got
   // from the user back at Adafruit_TSC2046::begin().
 
-  float rTouch = _xResistance * (xResult / 4096.f) * (((float) z2Result / (float) z1Result) - 1.f);
+  float rTouch = _xResistance * (xResult / 4096.f) *
+                 (((float)z2Result / (float)z1Result) - 1.f);
 
   return TSPoint(xResult, yResult, rTouch);
 }
@@ -97,12 +78,35 @@ uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
                                    uint8_t channelSelect) {
 
   CommandBits controlCmd;
-  controlCmd.addBit(1);                 // START bit, always 1.
-  controlCmd.addBits(channelSelect, 3); // A2:A0.
-  controlCmd.addBit(0);                 // 8/12': conversion mode.
-  controlCmd.addBit(0);                 // SER/DFR': what to use for VREF.
-  controlCmd.addBit(0);                 // PD1: Enable/disable' internal VREF.
-  controlCmd.addBit(1);                 // PD0: ADC on/off'.
+
+  // START bit, always 1.
+  controlCmd.addBit(1);
+
+  // A2:A0: the channel select/"address" bits, which control the multiplexer
+  // output. This will be one of the `ADDR_` values near the top of the file.
+  controlCmd.addBits(channelSelect, 3);
+
+  // ADC conversion mode: LOW for 12-bit mode, and HIGH for 8-bit mode.
+  controlCmd.addBit(0);
+
+  // SER/DFR': what to use for VREF. HIGH for single-ended reference mode,
+  // which uses the internal 2.5 VREF in the TSC2046. LOW for differential
+  // reference mode. We're using differential reference mode, which requires
+  // connecting the Arduino Vcc to both Vcc and VREF on the TSC2046.
+  controlCmd.addBit(0);
+
+  // PD1: Enable/disable' internal VREF. We're using differential reference
+  // mode, so turn off the internal VREF.
+  controlCmd.addBit(0);
+
+  // PD0: This bit is ADC on/off', technically, but when both PD1 and PD0 are
+  // 0, then it leaves the ADC off *between* conversions, but powers it on
+  // *during* conversions. According to the datasheet the ADC is able to power
+  // up instantly and there are no delays incured by leaving the ADC powered
+  // off between conversions. Leaving the ADC on is intended for certain
+  // strategies that use external capacitors to filter out touchscreen noise.
+  // This doesn't apply to us, so we leave it off between conversions.
+  controlCmd.addBit(0);
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
       &spiDev,
