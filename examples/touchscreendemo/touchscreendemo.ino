@@ -18,15 +18,16 @@ void loop() {
   delay(200);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  auto point = touchscreen.getPoint();
+  if (touchscreen.isTouched()) {
+    auto point = touchscreen.getPoint();
 
-
-  Serial.print(point.xPercent());
-  Serial.print("\t");
-  Serial.print(point.yPercent());
-  Serial.print("\t");
-  Serial.print(point.z);
-  Serial.print("\n");
+    Serial.print(point.xPercent());
+    Serial.print("\t");
+    Serial.print(point.yPercent());
+    Serial.print("\t");
+    Serial.print(point.z);
+    Serial.print("\n");
+  }
 
   delay(200);
   digitalWrite(LED_BUILTIN, LOW);

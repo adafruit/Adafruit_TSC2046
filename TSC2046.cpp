@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "TSC2046.h"
 
 // Multiplexer addresses for the various outputs in single-ended reference mode.
@@ -72,6 +74,14 @@ TSPoint Adafruit_TSC2046::getPoint() {
                  (((float)z2Result / (float)z1Result) - 1.f);
 
   return TSPoint(xResult, yResult, rTouch);
+}
+
+bool Adafruit_TSC2046::isTouched() {
+  TSPoint point = getPoint();
+
+  // If the resistance is not infinity, NaN, some other non-finite number,
+  // or 0, then the touchscreen is probably being touched.
+  return isfinite(point.z) && point.z != 0;
 }
 
 uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
