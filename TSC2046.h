@@ -49,6 +49,7 @@ private:
 
   uint16_t readDfr(Adafruit_SPIDevice &spiDev, uint8_t channelSelect);
   uint16_t readSer(uint8_t channelSelect);
+  static uint16_t parse12BitValue(uint8_t spiUpperByte, uint8_t spiLowerByte);
 };
 
 class CommandBits {
