@@ -6,38 +6,39 @@
 #define TSC2046_H
 
 #if ARDUINO >= 100
- #include "Arduino.h"
- #include "Print.h"
+#include "Arduino.h"
+#include "Print.h"
 #else
- #include "WProgram.h"
+#include "WProgram.h"
 #endif
 
-#include <stdint.h>
 #include <Adafruit_BusIO_Register.h>
 #include <Adafruit_SPIDevice.h>
+#include <stdint.h>
 
 class TSPoint {
 public:
-    TSPoint(int16_t x, int16_t y, int16_t z1, int16_t z2);
+  TSPoint(int16_t x, int16_t y, int16_t z1, int16_t z2);
 
-    bool operator==(TSPoint rhs);
-    bool operator!=(TSPoint rhs);
+  bool operator==(TSPoint rhs);
+  bool operator!=(TSPoint rhs);
 
-    int16_t raw_x;
-    int16_t raw_y;
-    int16_t raw_z1;
-    int16_t raw_z2;
+  int16_t raw_x;
+  int16_t raw_y;
+  int16_t raw_z1;
+  int16_t raw_z2;
 
-    float x();
-    float y();
-    float z();
+  float x();
+  float y();
+  float z();
 };
 
 class Adafruit_TSC2046 {
 public:
   Adafruit_TSC2046(int32_t sensorId);
 
-  bool begin(int spiChipSelect, uint16_t rDiffX, SPIClass &spi = SPI, uint32_t spiFrequency = 2L * 1000L * 1000L);
+  bool begin(int spiChipSelect, uint16_t rDiffX, SPIClass &spi = SPI,
+             uint32_t spiFrequency = 2L * 1000L * 1000L);
 
   TSPoint getPoint();
 
