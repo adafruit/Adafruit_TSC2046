@@ -18,15 +18,14 @@
 
 class TSPoint {
 public:
-  TSPoint(int16_t x, int16_t y, int16_t z1, int16_t z2);
+  TSPoint(int16_t x, int16_t y, float z);
 
   bool operator==(TSPoint rhs);
   bool operator!=(TSPoint rhs);
 
   int16_t raw_x;
   int16_t raw_y;
-  int16_t raw_z1;
-  int16_t raw_z2;
+  float raw_z;
 
   float x();
   float y();
@@ -37,7 +36,7 @@ class Adafruit_TSC2046 {
 public:
   Adafruit_TSC2046(int32_t sensorId);
 
-  bool begin(int spiChipSelect, uint16_t rDiffX, SPIClass &spi = SPI,
+  bool begin(int spiChipSelect, uint32_t xResistance, SPIClass &spi = SPI,
              uint32_t spiFrequency = 2L * 1000L * 1000L);
 
   TSPoint getPoint();
@@ -47,6 +46,7 @@ private:
   int _spiCS;
   int32_t _sensorId;
   int64_t _spiFrequency;
+  uint32_t _xResistance;
 
   uint16_t readDfr(Adafruit_SPIDevice &spiDev, uint8_t channelSelect);
   uint16_t readSer(uint8_t channelSelect);

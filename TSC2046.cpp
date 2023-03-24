@@ -38,26 +38,28 @@
 // In 12-bit conversion mode: LSB_SIZE = V_REF / 4096
 // In  8-bit conversion mode: LSB_SIZE = V_REF / 256
 
-TSPoint::TSPoint(int16_t x, int16_t y, int16_t z1, int16_t z2) {
+TSPoint::TSPoint(int16_t x, int16_t y, float z) {
   raw_x = x;
   raw_y = y;
-  raw_z1 = z1;
-  raw_z2 = z2;
+  raw_z = z;
 }
 
 float TSPoint::x() { return (raw_x * 3.3) / 4096; }
 
 float TSPoint::y() { return (raw_y * 3.3) / 4096; }
 
-float TSPoint::z() { return raw_z1 / 4096; }
+float TSPoint::z() {
+  return raw_z / 4096;
+}
 
 Adafruit_TSC2046::Adafruit_TSC2046(int32_t sensorId) { _sensorId = sensorId; }
 
-bool Adafruit_TSC2046::begin(int spiChipSelect, uint16_t rDiffX, SPIClass &spi,
+bool Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance, SPIClass &spi,
                              uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
   _spi = &spi;
   _spiFrequency = spiFrequency;
+  _xResistance = xResistance;
 
   return true;
 }
@@ -75,15 +77,23 @@ TSPoint Adafruit_TSC2046::getPoint() {
   spiDev.begin();
 
   int16_t xResult = readDfr(spiDev, REG_DFR_X_POS);
-  delay(100);
   int16_t yResult = readDfr(spiDev, REG_DFR_Y_POS);
-  delay(100);
   int16_t z1Result = readDfr(spiDev, REG_DFR_Z1_POS);
-  delay(100);
   int16_t z2Result = readDfr(spiDev, REG_DFR_Z2_POS);
 
-  // FIXME: Calculate pressure.
-  return TSPoint(xResult, yResult, z1Result, z2Result);
+  // The datasheet gives two ways to calculate pressure. We're going to use the
+  // one that requires the least information from the user:
+  //
+  // R_TOUCH = R_X_PLATE * (X_POSITON / 4096) * (Z_2 / Z_1 - 1)
+  // Or, if you prefer LaTeX:
+  // R_{TOUCH} = R_{X_{Plate}} * \frac{X_{Position}}{4096} * (\frac{Z_2}{Z_{1}} - 1)
+  // This
+  // So this requires knowing the X-Plate resistance, which thankfully we got
+  // from the user back at Adafruit_TSC2046::begin().
+
+  float rTouch = _xResistance * (xResult / 4096.f) * (((float) z2Result / (float) z1Result) - 1.f);
+
+  return TSPoint(xResult, yResult, rTouch);
 }
 
 uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
