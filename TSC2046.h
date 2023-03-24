@@ -134,6 +134,16 @@ public:
    */
   bool isTouched();
 
+  /*! @brief Enables or disables interrupts that fire when the touchscreen
+   * is touched. See [here] for information on using Arduino interrupts.
+   *
+   * @param enabled True to enable interrupts, false to disable them.
+   * @param pin The Arduino pin number connected the `IRQ` pin of the TSC2046.
+   *
+   * here: https://reference.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+   */
+  void enableInterrupts(bool enable, int pin);
+
 private:
   SPIClass *_spi;
   int _spiCS;
