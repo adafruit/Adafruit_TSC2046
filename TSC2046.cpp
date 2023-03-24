@@ -85,9 +85,6 @@ TSPoint Adafruit_TSC2046::getPoint() {
   // one that requires the least information from the user:
   //
   // R_TOUCH = R_X_PLATE * (X_POSITON / 4096) * (Z_2 / Z_1 - 1)
-  // Or, if you prefer LaTeX:
-  // R_{TOUCH} = R_{X_{Plate}} * \frac{X_{Position}}{4096} * (\frac{Z_2}{Z_{1}} - 1)
-  // This
   // So this requires knowing the X-Plate resistance, which thankfully we got
   // from the user back at Adafruit_TSC2046::begin().
 
@@ -139,38 +136,31 @@ static uint16_t Adafruit_TSC2046::parse12BitValue(uint8_t spiUpperByte,
   // `spiLowerByte` will contain bits 4:0.
   // See below for why.
 
+  // clang-format off
   /*
-                                 Upper Byte Lower Byte
-                 -------------------------------------------------
-    ------------------------------------------------- SPI Read:    |  7  |  6  |
-    5  |  4  |  3  |  2  |  1  |  0  |  |  7  |  6  |  5  |  4  |  3  |  2  |  1
-    |  0  |
+                                 Upper Byte                                         Lower Byte
+                 -------------------------------------------------  -------------------------------------------------
+    SPI Read:    |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |  |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
 
-    12-bit Map:  |  X  |  11 |  10 |  9  |  8  |  7  |  6  |  5  |  |  4  |  3
-    |  2  |  1  |  0  |  X  |  X  |  X  |
+    12-bit Map:  |  X  |  11 |  10 |  9  |  8  |  7  |  6  |  5  |  |  4  |  3  |  2  |  1  |  0  |  X  |  X  |  X  |
 
-    Want:        |  X  |  X  |  X  |  12 |  11 |  10 |  9  |  8  |  |  7  |  6
-    |  5  |  4  |  3  |  2  |  1  |  0  |
+    Want:        |  X  |  X  |  X  |  12 |  11 |  10 |  9  |  8  |  |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
 
-    Xs are "don't care" values that we don't want in our result, so we should
-    mask them out.
+    Xs are "don't care" values that we don't want in our result, so we should mask them out.
 
-    "SPI Read" are the raw `spiUpperByte` and `spiLowerByte` we get over SPI.
+--
+    "12-bit Map" are the where each bit of the 12-bit number we actually want are placed *in* the data we read
+    over SPI. So the bit 11 (0-indexed) of the 12-bit number is found in bit 6 of `spiUpperByte`.
+    Why is bit 7 of the Upper Byte an X? Because there is *one* extra clock cycle after we finish sending the
+    control byte before the TSC2046 starts sending out the converted data. BusIO captures *immediately* after
+    the SPI command is finished, though, so the very first bit (the most-significant bit, in BusIO's "eyes")
+    is not the most-significant bit of the 12-bit value, but instead an "empty" value that
+    1) we need to mask out, and 2) pads the start of the 12-bit value by one bit index.
 
-    "12-bit Map" are the where each bit of the 12-bit number we actually want
-    are placed *in* the data we read over SPI. So the bit 11 (0-indexed) of the
-    12-bit number is found in bit 6 of `spiUpperByte`. Why is bit 7 of the Upper
-    Byte an X? Because there is *one* extra clock cycle after we finish sending
-    the control byte before the TSC2046 starts sending out the converted data.
-    BusIO captures *immediately* after the SPI command is finished, though, so
-    the very first bit (the most-significant bit, in BusIO's "eyes") is not the
-    most-significant bit of the 12-bit value, but instead an "empty" value that
-    1) we need to mask out, and 2) pads the start of the 12-bit value by one bit
-    index.
-
-    "Want" is what we need to bit-shift and mask to get, with the numbers being
-    the indexes of the overall 12-bit value.
+    "Want" is what we need to bit-shift and mask to get, with the numbers being the indexes of the overall 12-bit
+    value.
    */
+  // clang-format on
 
   // Mask out bit 7 of `spiUpperByte`, which is an "X".
   spiUpperByte &= 0x7F; // 0b0111_1111;
