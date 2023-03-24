@@ -134,12 +134,22 @@ public:
    */
   bool isTouched();
 
+  /*! @brief Enables or disables interrupts that fire when the touchscreen
+   * is touched. See [here] for information on using Arduino interrupts.
+   *
+   * @param enable True to enable interrupts, false to disable them.
+   *
+   * here: https://reference.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+   */
+  void enableInterrupts(bool enable);
+
 private:
   SPIClass *_spi;
   int _spiCS;
   int32_t _sensorId;
   int64_t _spiFrequency;
   uint32_t _xResistance;
+  bool _interruptsEnabled = false;
 
   uint16_t readDfr(Adafruit_SPIDevice &spiDev, uint8_t channelSelect);
   uint16_t readSer(uint8_t channelSelect);
