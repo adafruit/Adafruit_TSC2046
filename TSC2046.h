@@ -104,7 +104,7 @@ public:
    * @param spi
    * @parblock The SPI interface to use when communicating to this
    * touchscreen. Defaults to [SPI], the default SPI interface on Arduino
-   * boards. This is often connected to pins labeled `SC`, `MOSI`, and `MISO`
+   * boards. This is often connected to pins labeled `SCK`, `MOSI`, and `MISO`
    * on the physical board. For example, on Arduino Uno the MISO of the default
    * `SPI` interface is pin 12.
    * [SPI]: https://docs.arduino.cc/learn/communications/spi
@@ -119,9 +119,20 @@ public:
 
   /*!
    * @brief Gets the coordinates of the the current touch on the touchscreen.
-   * See the fields of TSPoint for more information.
+   * Use Adafruit_TSC2046::isTouched to determine if the touchscreen is being
+   * touched in the first place.
+   *
+   * @see ::TSPoint.
    */
   TSPoint getPoint();
+
+  /*! @brief Determines if the touchscreen is currently being touched.
+   * The X and Y coordinates returned by Adafruit_TSC2046::getPoint are
+   * meaningless if this is false.
+   *
+   * @returns True if the touchscreen is being touched, false if it is not.
+   */
+  bool isTouched();
 
 private:
   SPIClass *_spi;
