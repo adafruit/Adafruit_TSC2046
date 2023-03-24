@@ -5,7 +5,7 @@
 // Differential resistance across X- and X+: 400 Ohms.
 
 
-Adafruit_TSC2046 touchscreen = Adafruit_TSC2046(2113);
+Adafruit_TSC2046 touchscreen;
 
 void setup() {
   Serial.begin(9600);
@@ -21,11 +21,11 @@ void loop() {
   auto point = touchscreen.getPoint();
 
 
-  Serial.print(point.raw_x);
+  Serial.print(point.xPercent());
   Serial.print("\t");
-  Serial.print(point.raw_y);
+  Serial.print(point.yPercent());
   Serial.print("\t");
-  Serial.print(point.raw_z);
+  Serial.print(point.z);
   Serial.print("\n");
 
   delay(200);
