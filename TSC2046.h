@@ -137,12 +137,11 @@ public:
   /*! @brief Enables or disables interrupts that fire when the touchscreen
    * is touched. See [here] for information on using Arduino interrupts.
    *
-   * @param enabled True to enable interrupts, false to disable them.
-   * @param pin The Arduino pin number connected the `IRQ` pin of the TSC2046.
+   * @param enable True to enable interrupts, false to disable them.
    *
    * here: https://reference.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
    */
-  void enableInterrupts(bool enable, int pin);
+  void enableInterrupts(bool enable);
 
 private:
   SPIClass *_spi;
@@ -150,6 +149,7 @@ private:
   int32_t _sensorId;
   int64_t _spiFrequency;
   uint32_t _xResistance;
+  bool _interruptsEnabled = false;
 
   uint16_t readDfr(Adafruit_SPIDevice &spiDev, uint8_t channelSelect);
   uint16_t readSer(uint8_t channelSelect);

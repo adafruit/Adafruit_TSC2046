@@ -84,6 +84,21 @@ bool Adafruit_TSC2046::isTouched() {
   return isfinite(point.z) && point.z != 0;
 }
 
+void Adafruit_TSC2046::enableInterrupts(bool enable) {
+
+  // NOTE: On my hardware, PENIRQ' goes low when the touchscreen is touched
+  // *regardless* of the PD0 value that enables and disables interrupts.
+
+  _interruptsEnabled = enable;
+
+  // Perform any read so we can get the control byte over there with the new
+  // PD0 value which enables or disables the PENIRQ' output.
+  Adafruit_SPIDevice spiDev = Adafruit_SPIDevice(
+      _spiCS, _spiFrequency, SPI_BITORDER_MSBFIRST, SPI_MODE0, _spi);
+  spiDev.begin();
+  readDfr(spiDev, 0);
+}
+
 uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
                                    uint8_t channelSelect) {
 
@@ -115,8 +130,12 @@ uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
   // up instantly and there are no delays incured by leaving the ADC powered
   // off between conversions. Leaving the ADC on is intended for certain
   // strategies that use external capacitors to filter out touchscreen noise.
-  // This doesn't apply to us, so we leave it off between conversions.
-  controlCmd.addBit(0);
+  // This doesn't apply to us, but there is one more consideration, which is
+  // that the PENIRQ' output used to trigger interrupts is disabled if
+  // this bit is HIGH (1). Since that's the only functionality of this bit
+  // we care about, we'll make it correspond directly to the user's
+  // IRQ setting.
+  controlCmd.addBit(!_interruptsEnabled);
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
       &spiDev,
