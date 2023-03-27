@@ -99,7 +99,7 @@ public:
    * in Ohms (Ω), the unit for resistance. Pass that number as this parameter.
    * If your multimeter gives you a value in kilohms (kΩ), divide that number
    * by 1000 to get Ohms and pass that value.
-   * @endbarblock
+   * @endparblock
    *
    * @param spi
    * @parblock The SPI interface to use when communicating to this
