@@ -9,7 +9,7 @@ Adafruit_TSC2046 touchscreen;
 
 void setup() {
   Serial.begin(9600);
-  touchscreen.begin(10, 400);
+  touchscreen.begin(400);
   pinMode(LED_BUILTIN, OUTPUT);
 }
 

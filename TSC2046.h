@@ -110,9 +110,6 @@ public:
    * @brief Initialize this TSC2046 using SPI. You must call this method before
    * calling Adafruit_TSC2046::getPoint.
    *
-   * @param spiChipSelect The pin number on your board that you have connected
-   * to the SPI CS (Chip Select) pin on the TSC2046.
-   *
    * @param xResistance The resistance in Ohms between X- and X+ on the TSC2046
    * breakout. With a multimeter set to measure resistance, place one probe on
    * the pin-hole labled "X-" on your TSC2046 breakout board, and place the
@@ -137,18 +134,24 @@ public:
    * pin, pass `-1` to this argument (which is also the default value if you do
    * not pass this argument at all).
    *
+   * @param spiChipSelect The pin number on your board that you have connected
+   * to the SPI CS (Chip Select) pin on the TSC2046. Defaults to the `SS` pin
+   * if not provided, which is also the default chip select pin of the
+   * [default SPI interface][SPI].
+   *
    * @param spi The SPI interface to use when communicating to this
    * touchscreen. Defaults to [SPI], the default SPI interface on Arduino
    * boards. This is often connected to pins labeled `SCK`, `MOSI`, and `MISO`
    * on the physical board. For example, on Arduino Uno the MISO of the default
    * `SPI` interface is pin 12.
-   * [SPI]: https://docs.arduino.cc/learn/communications/spi
    *
    * @param spiFrequency The clock frequency for the SPI peripheral. Defaults
    * to 2 MHz if not specified. Must not be higher than 2 MHz, per the TSC2046
    * datasheet.
+   *
+   * [SPI]: https://docs.arduino.cc/learn/communications/spi
    */
-  void begin(int spiChipSelect, uint32_t xResistance, float vRef = -1,
+  void begin(uint32_t xResistance, float vRef = -1, int spiChipSelect = SS,
              SPIClass &spi = SPI, uint32_t spiFrequency = 2L * 1000L * 1000L);
 
   /*!

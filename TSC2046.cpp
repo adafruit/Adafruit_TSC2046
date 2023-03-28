@@ -37,8 +37,8 @@ Adafruit_TSC2046::~Adafruit_TSC2046() {
   }
 }
 
-void Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance,
-                             float vRef = -1, SPIClass &spi,
+void Adafruit_TSC2046::begin(uint32_t xResistance, float vRef = -1,
+                             int spiChipSelect, SPIClass &spi,
                              uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
   _spi = &spi;
