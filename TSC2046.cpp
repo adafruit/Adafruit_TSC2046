@@ -80,10 +80,22 @@ void Adafruit_TSC2046::setTouchedThreshold(float rTouchThreshold) {
 
 TSPoint Adafruit_TSC2046::getPoint() {
 
+  // If interrupts are enabled on the TSC2046 side, temporarily disable them
+  // on the procesor side so we don't get interrupted while reading the various
+  // coordinates.
+  if (_interruptsEnabled) {
+    noInterrupts();
+  }
+
   int16_t xResult = readCoord(ADDR_DFR_X_POS);
   int16_t yResult = readCoord(ADDR_DFR_Y_POS);
   int16_t z1Result = readCoord(ADDR_DFR_Z1_POS);
   int16_t z2Result = readCoord(ADDR_DFR_Z2_POS);
+
+  // Now that we're done with the sensitive stuff, re-enable interrupts.
+  if (_interruptsEnabled) {
+    interrupts();
+  }
 
   // The datasheet gives two ways to calculate pressure. We're going to use the
   // one that requires the least information from the user:
@@ -114,7 +126,7 @@ void Adafruit_TSC2046::enableInterrupts(bool enable) {
   _interruptsEnabled = enable;
 
   // Perform any read so we can get the control byte over there with the new
-  // PD0 value which enables or disables the PENIRQ' output.
+  // PD values which enables or disables the PENIRQ' output.
   readCoord(0);
 }
 
@@ -216,22 +228,39 @@ uint16_t Adafruit_TSC2046::readCoord(uint8_t channelSelect) {
   // accuracy.
   controlCmd.addBit(0);
 
-  // PD1: Enable/disable' internal VREF. We're using differential reference
-  // mode, so turn off the internal VREF.
-  controlCmd.addBit(0);
+  // NOTE(Qyriad): The datasheet says that PD0 = 1 disables interrupts, however
+  // in my testing PENIRQ' goes low when the touchscreen is touched even if
+  // PD0 = 1, and the only case where PENIRQ' does not respond to touches is
+  // when *both* PD0 and PD1 are HIGH.
+  if (_interruptsEnabled) {
+    // PD1: Enable/disable' internal VREF. We're using differential reference
+    // mode, so VREF (internal or external) doesn't matter at all, so let's
+    // just leave it off.
+    controlCmd.addBit(0);
 
-  // PD0: This bit is ADC on/off', technically, but when both PD1 and PD0 are
-  // 0, then it leaves the ADC off *between* conversions, but powers it on
-  // *during* conversions. According to the datasheet the ADC is able to power
-  // up instantly and there are no delays incured by leaving the ADC powered
-  // off between conversions. Leaving the ADC on is intended for certain
-  // strategies that use external capacitors to filter out touchscreen noise.
-  // This doesn't apply to us, but there is one more consideration, which is
-  // that the PENIRQ' output used to trigger interrupts is disabled if
-  // this bit is HIGH (1). Since that's the only functionality of this bit
-  // we care about, we'll make it correspond directly to the user's
-  // IRQ setting.
-  controlCmd.addBit(!_interruptsEnabled);
+    // PD0: ADC on/off', sort of. When both PD1 and PD0 are LOW, then it leaves
+    // the ADC off *between* conversions, but powers it on *during*
+    // conversions. According to the datasheet the ADC is able to power up
+    // instantly and there is no delay from leaving the ADC powered off
+    // between conversions. Leaving the ADC on is intended for certain
+    // strategies that use external capacitors to filter out touchscreen noise.
+    // This bit also, with PD1, controls whether or not interrupts are enabled.
+    // Interrupts are *only* disabled when *both* PD1 and PD0 are HIGH.
+    // In this if block, interrupts are enabled, so we can leave this LOW
+    // and have the ADC power down between conversions to save power.
+    controlCmd.addBit(0);
+  } else {
+    // PD1: Enable/disable' internal VREF. We're using differential reference
+    // mode, so VREF (internal or external) doesn't matter at all. However,
+    // this value *does* affect whether or not interrupts or enabled.
+    // If we explicitly want to disable interrupts, we have to set this bit
+    // HIGH, which consumes more power.
+    controlCmd.addBit(1);
+
+    // PD0: ADC on/off'. We want the ADC on, and also this value has to be
+    // HIGH to disable interrupts.
+    controlCmd.addBit(1);
+  }
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
       _spiDev,

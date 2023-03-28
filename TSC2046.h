@@ -79,7 +79,28 @@ public:
 
 /*! @brief Class for interfacing with a TSC2046 touchscreen controller.
  *
- * Notable methods: Adafruit_TSC2046::begin, and Adafruit_TSC2046::begin.
+ * Notable methods: Adafruit_TSC2046::begin, Adafruit_TSC2046::isTouched,
+ * and Adafruit_TSC2046::getPoint.
+ *
+ * @note @parblock The way power works with the TSC2046 is a bit unintuitive.
+ * When interrupts are *enabled* (which is the default, and only changed with
+ * Adafruit_TSC2046::enableInterrupts), the TSC2046 is put into an
+ * "auto power-down" mode, in which the TSC2046 automatically powers down
+ * at the end of a read, and automatically powers back up at the beginning of
+ * a read. According to the datasheet there's no delay for that and the
+ * power-up is instant. Because of that, this library leaves the TSC2046 in
+ * that mode by default.
+ *
+ * In that mode, however, TSC2046 interrupts are enabled, meaning the IRQ
+ * pin goes LOW when the touchscreen is touched. *If* you have the IRQ pin
+ * connected to a pin on your Arduino that has interrupts enabled *and* you
+ * have enabled interrupts on that pin, *and* you *don't* want interrupts
+ * from this chip, you should call @link Adafruit_TSC2046::enableInterrupts
+ * `enableInterrupts(false)`@endlink.
+ * This will prevent the TSC2046 from powering down between reads, which uses
+ * more power, but will prevent the IRQ pin from going LOW if the touchscreen
+ * is touched and potentially causing an unwanted hardware interrupt.
+ * @endparblock
  */
 class Adafruit_TSC2046 {
 public:
@@ -93,45 +114,36 @@ public:
    * @param spiChipSelect The pin number on your board that you have connected
    * to the SPI CS (Chip Select) pin on the TSC2046.
    *
-   * @param xResistance
-   * @parblock The resistance in Ohms between X- and X+ on the TSC2046 breakout.
-   * With a multimeter set to measure resistance, place one probe on the
-   * pin-hole labled "X-" on your TSC2046 breakout board, and place the other
-   * probe on the pin-hole labled "X+". Your multimeter should show you a number
-   * in Ohms (Ω), the unit for resistance. Pass that number as this parameter.
-   * If your multimeter gives you a value in kilohms (kΩ), divide that number
-   * by 1000 to get Ohms and pass that value.
-   *
+   * @param xResistance The resistance in Ohms between X- and X+ on the TSC2046
+   * breakout. With a multimeter set to measure resistance, place one probe on
+   * the pin-hole labled "X-" on your TSC2046 breakout board, and place the
+   * other probe on the pin-hole labled "X+". Your multimeter should show you a
+   * number in Ohms (Ω), the unit for resistance. Pass that number as this
+   * parameter. If your multimeter gives you a value in kilohms (kΩ), divide
+   * that number by 1000 to get Ohms and pass that value. \n
    * If you do not have a multimeter or otherwise don't have a measurement,
    * `400` (400Ω) is a reasonable value to pass.
-   * @endparblock
    *
-   * @param vRef
-   * @parblock The voltage (in volts) connected to the TSC2046's VRef pin,
+   * @param vRef The voltage (in volts) connected to the TSC2046's VRef pin,
    * if any. `-1` (the default if the argument is not provided) indicates that
    * nothing is connected to the TSC2046's VRef pin. Connecting VRef to
    * a voltage higher than 2.5V increases the accuracy of **non**-touchscreen
    * reads (temperature, battery voltage, and auxiliary voltage), and also
    * directly determines the maximum voltage value that can be measured by
    * Adafruit_TSC2046::readAuxiliaryVoltage. It has no effect on touchscreen
-   * coordinate reads.
-   *
-   * @note The TSC2046's VRef pin should either be connected to the same supply
+   * coordinate reads. \n
+   * The TSC2046's VRef pin should either be connected to the same supply
    * as the TSC2046's Vin pin, or not connected at all (Vin should be connected
    * to a 5V or 3.3V supply from the Arduino). If you do not connect the VRef
    * pin, pass `-1` to this argument (which is also the default value if you do
    * not pass this argument at all).
    *
-   * @endparblock
-   *
-   * @param spi
-   * @parblock The SPI interface to use when communicating to this
+   * @param spi The SPI interface to use when communicating to this
    * touchscreen. Defaults to [SPI], the default SPI interface on Arduino
    * boards. This is often connected to pins labeled `SCK`, `MOSI`, and `MISO`
    * on the physical board. For example, on Arduino Uno the MISO of the default
    * `SPI` interface is pin 12.
    * [SPI]: https://docs.arduino.cc/learn/communications/spi
-   * @endparblock
    *
    * @param spiFrequency The clock frequency for the SPI peripheral. Defaults
    * to 2 MHz if not specified. Must not be higher than 2 MHz, per the TSC2046
@@ -143,10 +155,10 @@ public:
   /*!
    * @brief Indicates the voltage connected to the TSC2046's "VRef" pin, if any.
    * Use `-1` if nothing is connected to the VRef pin. See the documentation
-   * for Adafruit_TSC2046::begin's `vRef` parameter for more information.
+   * for Adafruit_TSC2046::begin's @p vRef parameter for more information.
    *
    * @param vRef The voltage in volts of the supply connected to the TSC2046's
-   * VRef pin. See the documentation for Adafruit_TSC2046::begin's `vRef`
+   * VRef pin. See the documentation for Adafruit_TSC2046::begin's @p vRef
    * parameter for more information.
    */
   void setVRef(float vRef);
@@ -190,11 +202,22 @@ public:
   bool isTouched();
 
   /*! @brief Enables or disables interrupts that fire when the touchscreen
-   * is touched. See [here] for information on using Arduino interrupts.
+   * is touched. When an interrupt fires, the `IRQ` pin on the TSC2046
+   * is pulled LOW. That pin can be connected to an interrupt-enabled Arduino
+   * pin to run code when the TSC2046 detects a touch. See [here] for
+   * information on using Arduino interrupts.
+   *
+   * @note On the TSC2046 side, interrupts are **enabled** by default, because
+   * disabling interrupts on this chip requires more power. If you do not want
+   * interrupts from the TSC2046 to run, it's recommended to instead either
+   * simply not connect the IRQ pin, or [mask] the interrupt on the Arduino
+   * processor. See the note on power in the
+   * [class documentation](@ref Adafruit_TSC2046) for more information.
    *
    * @param enable True to enable interrupts, false to disable them.
    *
    * here: https://reference.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+   * mask: https://www.arduino.cc/reference/en/language/functions/external-interrupts/detachinterrupt/
    */
   void enableInterrupts(bool enable);
 
@@ -229,7 +252,7 @@ public:
    *
    * The TSC2046 allows you to measure the voltage of whatever you connect to
    * the AUX pin, however the voltage cannot be higher than the voltage
-   * reference. See the documentation for the `vRef` parameter of
+   * reference. See the documentation for the @p vRef parameter of
    * Adafruit_TSC2046::begin for more information, but in summary if you don't
    * connect anything to the "VRef" pin on your TSC2046, the maximum auxiliary
    * voltage you can read is 2.5V. If you want to be able to read higher
@@ -248,7 +271,7 @@ public:
 
   /*! @brief Gets the effective reference voltage, which is 2.5V if no external
    * reference voltage value was provided in Adafruit_TSC2046::begin or
-   * Adafruit_TSC2046::setVRef, or the value of the `vRef` argument of those
+   * Adafruit_TSC2046::setVRef, or the value of the @p vRef argument of those
    * functions otherwise.
    *
    * You probably don't need to call this function unless you're doing math
@@ -269,12 +292,12 @@ private:
 
   // NOTE(Qyriad): In my testing, the absolute most delicate touch where the X
   // and Y coordinate values were not completely nonsensical had R_TOUCH at
-  // about 5.7kΩ (and the X and Y coordinates were still fairly off), and
-  // every complete false positive was above 100kΩ. To be on the safe side
-  // we'll use 100kΩ as the default threshold.
+  // about 5.7kΩ (and even then the X and Y coordinates were still fairly
+  // off), and every complete false positive was above 100kΩ. To be on the
+  // safe side we'll use 100kΩ as the default threshold.
   float _touchedThreshold = 100000.f;
 
-  bool _interruptsEnabled = false;
+  bool _interruptsEnabled = true;
   float _vRef;
 
   float readTemperatureK();
