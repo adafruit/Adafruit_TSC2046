@@ -7,14 +7,130 @@
  *
  * This is a library for the TI TSC2046 resistive touchscreen.
  *
+ * @see Adafruit_TSC2046
+ * @see Adafruit_TSC2046::begin
+ * @see Adafruit_TSC2046::getPoint
+ * @see TSPoint
+ *
  * @section author Author
  *
  * Written by Qyriad <qyriad@qyriad.me>, 2023.
  *
- * @section license license
+ * @section license License
  *
  * MIT license. All text above must be included in any redistribution.
  *
+ * @section usage Usage
+ *
+ * @subsection connecting Connecting the breakout
+ *
+ * Adafruit's TSC2046 breakout board will have 11 pins. At least 6 of those
+ * pins must be connected to use the touchscreen: Vin, GND, SCK, MISO, MOSI,
+ * and CS. Vin should be connected to `+5V` for 5V boards like the Arduino Uno,
+ * and `+3V3` for 3.3V boards like the MKR Zero. You can find the voltage of
+ * your board in the "Tech Specs" section of the documentation for that board
+ * under "I/O Voltage".
+ *
+ * The other 5 pins should be connected as follows:
+ *
+ * | TSC2046 Breakout Pin | Arduino Pin |
+ * | -------------------- | ----------- |
+ * | GND                  | GND         |
+ * | SCK                  | SCK         |
+ * | MISO                 | CIPO        |
+ * | MOSI                 | COPI        |
+ * | CS                   | SS          |
+ *
+ * Check the pinout for your board to see which pin numbers these correspond
+ * to. As an example, on the Arduino Uno, SCK, MISO, MOSI, and CS would be
+ * connected to D13, D12, D11, and D10 respectively.
+ *
+ * @subsubsection irq_pin The IRQ Pin
+ * The IRQ pin can be used to trigger an interrupt service routine whenever
+ * the touchscreen detects a touch. To do this, connect the IRQ pin to a
+ * digital pin on your Arduino board (see
+ * [Adafruit's documentation][attachInterrupt] on interrupts for what pins are
+ * usable for interrupts for each board), and "attach" the interrupt to an
+ * interrupt service routine. Again see Adafruit's documentation on
+ * [attachInterrupt] for more information, and see
+ * Adafruit_TSC2046::enableInterrupts for information on the TSC2046's
+ * interrupts specifically.
+ *
+ * @subsubsection vbat_pin The Vbat Pin
+ * The Vbat pin can be used to measure some other voltage external to the
+ * touchscreen, though as the name suggests it is intended to measure a
+ * battery. To do this, connect the positive terminal of your battery to the
+ * Vbat pin, and the negative terminal to a common ground (GND), and call
+ * Adafruit_TSC2046::readBatteryVoltage to get its voltage. You can measure
+ * voltages (inclusively) between 0V and 6V this way.
+ *
+ * @subsubsection aux_pin The AUX Pin
+ * The AUX pin, like the Vbat pin, can be used to measure some other voltage
+ * external to the touchscreen. Unlike Vbat, however, the maximum voltage
+ * this pin can measure is determined by the reference voltage, which by
+ * default is 2.5V. To measure higher voltages with this pin, take a look
+ * at the next paragraph which talks about VRef.
+ *
+ * @subsubsection vref_pin The VRef pin
+ * The VRef pin can be used to override the "reference voltage" that the
+ * TSC2046 uses to measure other voltages. The TSC2046 has an internal
+ * reference voltage of 2.5V that by default we use when measuring temperature,
+ * Vbat, and AUX voltages. Connecting a 5V supply to the VRef pin instead will
+ * allow us to use that as the reference voltage, which will increase the
+ * *accuracy* of voltage reads for temperature, Vbat, and AUX; and will also
+ * increase the *range* of voltage reads for AUX.
+ *
+ * However, and this is important, if you connect something to the VRef pin,
+ * you must connect VRef to **the same thing you connected Vin to.**
+ *
+ * If you *do* override the reference voltage, pass the voltage you're giving
+ * it as Adafruit_TSC2046::begin's @p vRef parameter.
+ *
+ * [attachInterrupt]: https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+ *
+ * @subsection code Using the library
+ *
+ * Once you have your board connected up, interacting with it will be done
+ * with the Adafruit_TSC2046 class. First create an instance of this class
+ * (likely as a global variable), then call Adafruit_TSC2046::begin (usually
+ * in `setup()`. With that, you can call Adafruit_TSC2046::isTouched to
+ * check if the touchscreen is being touched, and then call
+ * Adafruit_TSC2046::getPoint to get the coordinates of the current touch.
+ * Adafruit_TSC2046::getPoint returns a @ref TSPoint object, which contains
+ * the direct X and Y coordinates as `point.x` and `point.y`. You may also
+ * get the X and Y coordinates as percentages with `point.xPercent()` and
+ * `point.yPercent()`. The pressure is in `point.z`, and its value *decreases*
+ * as pressure *increases*.
+ *
+ * Below is a simple example; a more complete example can be found in the
+ * `examples/` directory.
+ *
+ * @code{.cpp}
+ *
+ * Adafruit_TSC2046 touchscreen;
+ *
+ * void setup() {
+ *   touchscreen.begin(400); // 400 ohms measured between X- and X+.
+ * }
+ *
+ * void loop() {
+ *   if (touchscreen.isTouched()) {
+ *     TSPoint point = touchscreen.getPoint();
+ *     Serial.print("X, Y, Z: ");
+ *     Serial.print(point.xPercent());
+ *     Serial.print(", ");
+ *     Serial.print(point.yPercent());
+ *     Serial.print(", ");
+ *     Serial.println(point.z);
+ *   }
+ * }
+ *
+ * @endcode
+ *
+ * @see Adafruit_TSC2046
+ * @see Adafruit_TSC2046::begin
+ * @see Adafruit_TSC2046::getPoint
+ * @see TSPoint
  */
 
 #ifndef TSC2046_H
