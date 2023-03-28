@@ -77,8 +77,7 @@ public:
   float yPercent();
 };
 
-/*!
- * @brief Class for interfacing with a TSC2046 touchscreen controller.
+/*! @brief Class for interfacing with a TSC2046 touchscreen controller.
  *
  * Notable methods: Adafruit_TSC2046::begin, and Adafruit_TSC2046::begin.
  */
@@ -104,6 +103,22 @@ public:
    * by 1000 to get Ohms and pass that value.
    * @endparblock
    *
+   * @param vRef
+   * @parblock The voltage (in volts) connected to the TSC2046's VRef pin,
+   * if any. `-1` (the default if the argument is not provided) indicates that
+   * nothing is connected to the TSC2046's VRef pin. Connecting VRef to
+   * a voltage higher than 2.5V increases the accurace of **non**-touchscreen
+   * reads (temperature, battery voltage, and auxiliary voltage), and has no
+   * effect on touchscreen coordinate reads.
+   *
+   * @note The TSC2046's VRef pin should either be connected to the same supply
+   * as the TSC2046's Vin pin, or not connected at all (Vin should be connected
+   * to a 5V or 3.3V supply from the Arduino). If you do not connect the VRef
+   * pin, pass `-1` to this argument (which is also the default value if you do
+   * not pass this argument at all).
+   *
+   * @endparblock
+   *
    * @param spi
    * @parblock The SPI interface to use when communicating to this
    * touchscreen. Defaults to [SPI], the default SPI interface on Arduino
@@ -117,8 +132,19 @@ public:
    * to 2 MHz if not specified. Must not be higher than 2 MHz, per the TSC2046
    * datasheet.
    */
-  void begin(int spiChipSelect, uint32_t xResistance, SPIClass &spi = SPI,
+  void begin(int spiChipSelect, uint32_t xResistance, float vRef = -1, SPIClass &spi = SPI,
              uint32_t spiFrequency = 2L * 1000L * 1000L);
+
+  /*!
+   * @brief Indicates the voltage connected to the TSC2046's "VRef" pin, if any.
+   * Use `-1` if nothing is connected to the VRef pin. See the documentation
+   * for Adafruit_TSC2046::begin's `vRef` parameter for more information.
+   *
+   * @param vRef The voltage in volts of the supply connected to the TSC2046's
+   * VRef pin. See the documentation for Adafruit_TSC2046::begin's `vRef`
+   * parameter for more information.
+   */
+  void setVRef(float vRef);
 
   /*!
    * @brief Gets the coordinates of the the current touch on the touchscreen.
@@ -154,6 +180,18 @@ public:
    */
   float readTemperatureC();
 
+  /*! @brief Gets the effective reference voltage, which is 2.5V if no external
+   * reference voltage value was provided in Adafruit_TSC2046::begin or
+   * Adafruit_TSC2046::setVRef, or the value of the `vRef` argument of those
+   * functions otherwise.
+   *
+   * You probably don't need to call this function unless you're doing math
+   * on the touchscreen reads.
+   *
+   * @returns The effective reference voltage in volts.
+   */
+  float effectiveVRef();
+
 private:
   SPIClass *_spi;
   Adafruit_SPIDevice *_spiDev;
@@ -162,14 +200,17 @@ private:
   int64_t _spiFrequency;
   uint32_t _xResistance;
   bool _interruptsEnabled = false;
+  float _vRef;
 
   float readTemperatureK();
 
-  // Performs a 12-bit differential reference mode read.
-  uint16_t readComplex(uint8_t channelSelect);
+  // Performs a 12-bit differential reference mode read,
+  // used for coordinate reads.
+  uint16_t readCoord(uint8_t channelSelect);
 
-  // Performs an 8-bit single-ended reference mode read.
-  uint16_t readSimple(uint8_t channelSelect);
+  // Performs a 12-bit single-ended reference mode read,
+  // used for non-coordinate reads.
+  uint16_t readExtra(uint8_t channelSelect);
 
   static uint16_t parse12BitValue(uint8_t spiUpperByte, uint8_t spiLowerByte);
 };
