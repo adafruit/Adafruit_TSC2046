@@ -84,6 +84,9 @@ public:
  */
 class Adafruit_TSC2046 {
 public:
+
+  ~Adafruit_TSC2046();
+
   /*!
    * @brief Initialize this TSC2046 using SPI. You must call this method before
    * calling Adafruit_TSC2046::getPoint.
@@ -143,16 +146,31 @@ public:
    */
   void enableInterrupts(bool enable);
 
+  /*! @brief Reads the temperature measurement in degrees Celsius.
+   *
+   * @returns The temperature in degrees Celsius.
+   *
+   * @see Adafruit_TSC2046::readTemperatureF.
+   */
+  float readTemperatureC();
+
 private:
   SPIClass *_spi;
+  Adafruit_SPIDevice *_spiDev;
   int _spiCS;
   int32_t _sensorId;
   int64_t _spiFrequency;
   uint32_t _xResistance;
   bool _interruptsEnabled = false;
 
-  uint16_t readDfr(Adafruit_SPIDevice &spiDev, uint8_t channelSelect);
-  uint16_t readSer(uint8_t channelSelect);
+  float readTemperatureK();
+
+  // Performs a 12-bit differential reference mode read.
+  uint16_t readComplex(uint8_t channelSelect);
+
+  // Performs an 8-bit single-ended reference mode read.
+  uint16_t readSimple(uint8_t channelSelect);
+
   static uint16_t parse12BitValue(uint8_t spiUpperByte, uint8_t spiLowerByte);
 };
 

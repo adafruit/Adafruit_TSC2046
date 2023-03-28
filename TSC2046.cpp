@@ -28,17 +28,16 @@ float TSPoint::xPercent() { return x / 4096.f; }
 
 float TSPoint::yPercent() { return y / 4096.f; }
 
+Adafruit_TSC2046::~Adafruit_TSC2046() {
+  delete _spiDev;
+}
+
 void Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance,
                              SPIClass &spi, uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
   _spi = &spi;
   _spiFrequency = spiFrequency;
   _xResistance = xResistance;
-
-  return true;
-}
-
-TSPoint Adafruit_TSC2046::getPoint() {
 
   // Regarding SPI mode, timing diagrams on the datasheet show DCLK idling LOW,
   // which means the leading edge is a rising edge, which means CPOL = 0.
@@ -48,20 +47,23 @@ TSPoint Adafruit_TSC2046::getPoint() {
   // and the IN side changes on/after the leading edge of the clock, which
   // means CPHA = 0.
   // Therefore, our SPI mode is 0.
-  Adafruit_SPIDevice spiDev =
-      Adafruit_SPIDevice(_spiCS,                // cspin
-                         _spiFrequency,         // freq
-                         SPI_BITORDER_MSBFIRST, // dataOrder
-                         SPI_MODE0,             // dataMode
-                         _spi                   // theSPI
-      );
+  _spiDev = new Adafruit_SPIDevice(_spiCS, // cspin
+      _spiFrequency, // freq
+      SPI_BITORDER_MSBFIRST, // dataOrder
+      SPI_MODE0, // dataMode
+      _spi
+    );
+  _spiDev->begin();
 
-  spiDev.begin();
+  return true;
+}
 
-  int16_t xResult = readDfr(spiDev, ADDR_DFR_X_POS);
-  int16_t yResult = readDfr(spiDev, ADDR_DFR_Y_POS);
-  int16_t z1Result = readDfr(spiDev, ADDR_DFR_Z1_POS);
-  int16_t z2Result = readDfr(spiDev, ADDR_DFR_Z2_POS);
+TSPoint Adafruit_TSC2046::getPoint() {
+
+  int16_t xResult = readComplex(ADDR_DFR_X_POS);
+  int16_t yResult = readComplex(ADDR_DFR_Y_POS);
+  int16_t z1Result = readComplex(ADDR_DFR_Z1_POS);
+  int16_t z2Result = readComplex(ADDR_DFR_Z2_POS);
 
   // The datasheet gives two ways to calculate pressure. We're going to use the
   // one that requires the least information from the user:
@@ -93,14 +95,52 @@ void Adafruit_TSC2046::enableInterrupts(bool enable) {
 
   // Perform any read so we can get the control byte over there with the new
   // PD0 value which enables or disables the PENIRQ' output.
-  Adafruit_SPIDevice spiDev = Adafruit_SPIDevice(
-      _spiCS, _spiFrequency, SPI_BITORDER_MSBFIRST, SPI_MODE0, _spi);
-  spiDev.begin();
-  readDfr(spiDev, 0);
+  readComplex(0);
 }
 
-uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
-                                   uint8_t channelSelect) {
+float Adafruit_TSC2046::readTemperatureC() {
+  return readTemperatureK() - 273;
+}
+
+float Adafruit_TSC2046::readTemperatureK() {
+
+  // There are two ways to measure temperature on this chip.
+  // The first is to Already Know what the ADC value of TEMP0 is at
+  // 25°C for this particular chip, and then take a reading.
+  // We don't want to make the user do more measurements than they have to,
+  // so thankfully the second method eschews that limitation, in favor of
+  // needing to measure two different values.
+  // It then gives us a formula to calculate the temperature in Kelvin
+  // given the difference of two voltages.
+  //
+  // The formula is:
+  // T = (ELEMENTARY_CHARGE * ΔV) / (BOLTZMANN_CONST * ln(91)).
+  // Now, the elementary charge constant and Boltzmann's constant are both
+  // *incredibly* tiny -- far too tiny for us to do math with on a tiny
+  // microcontroller (Boltzmann's constant is 1.3807e-23).
+  //
+  // Thankfully, that formula simplifies to:
+  // T = 2572.52 K/V (kelvins per volt), or
+  // T = 2.57257 K/mV (kelvins per millivolt)
+
+  uint16_t temp0 = readSimple(ADDR_SER_TEMP0);
+  uint16_t temp1 = readSimple(ADDR_SER_TEMP1);
+
+  // temp0 and temp1 are given as a ratio of the reference voltage and
+  // the full ADC scale.
+  // In other words, the V_temp0 = (temp0 * V_REF) / (2 ** ADC_SIZE)
+  // Which in our case means V_temp0 = (temp0 * 5) / 4096
+  // We want the change in voltage across those two readings,
+  // and in millivolts, so:
+  float deltaMilliVolts = (((temp1 - temp0) * 5.f) / 4096.f) * 1000;
+
+  // So now let's apply that simplified formula:
+  float temperatureKelvin = deltaMilliVolts * 2.573f;
+
+  return temperatureKelvin;
+}
+
+uint16_t Adafruit_TSC2046::readComplex(uint8_t channelSelect) {
 
   CommandBits controlCmd;
 
@@ -138,7 +178,7 @@ uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
   controlCmd.addBit(!_interruptsEnabled);
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
-      &spiDev,
+      _spiDev,
       controlCmd.command,   // reg_addr
       ADDRBIT8_HIGH_TOREAD, // reg_type
       2,                    // Width: 2, to get the 12-bits we need.
@@ -146,7 +186,69 @@ uint16_t Adafruit_TSC2046::readDfr(Adafruit_SPIDevice &spiDev,
       // Therefore, the first 1-byte read will read the 8 most-significant bits,
       // and the next 1-byte read will read the 4 least-significant bits.
       MSBFIRST,
-      1 // address_with
+      1 // address_width
+  );
+
+  uint8_t spiOutputBuffer[2];
+  controlReg.read(spiOutputBuffer, 2);
+
+  // Will contain bits 11:5. See parse12BitValue for why.
+  uint8_t upperByte = spiOutputBuffer[0];
+  // Will contain bits 4:0. See parse12BitValue for why.
+  uint8_t lowerByte = spiOutputBuffer[1];
+
+  uint16_t result = parse12BitValue(upperByte, lowerByte);
+
+  return result;
+}
+
+uint16_t Adafruit_TSC2046::readSimple(uint8_t channelSelect) {
+  CommandBits controlCmd;
+
+  // START bit, always 1.
+  controlCmd.addBit(1);
+
+  // A2:A0: the channel select/"address" bits, which control the multiplexer
+  // output. This will be one of the `ADDR` values near the top of the file.
+  controlCmd.addBits(channelSelect, 3);
+
+  // ADC conversion mode: LOW for 12-bit mode, and HIGH for 8-bit mode.
+  controlCmd.addBit(0);
+
+  // SER/DFR': what to use for VREF. HIGH for single-ended reference mode,
+  // which uses the internal 2.5 VREF in the TSC2046. LOW for differential
+  // reference mode. For reading coordinates we use differential reference
+  // mode, but for reading "extras" like temperature, V_BAT, and AUX_IN,
+  // we have to use single-ended reference mode.
+  controlCmd.addBit(1);
+
+  // PD1: Enable/disable' internal VREF. Disable VREF, as we're still
+  // overdriving it with our Vcc.
+  controlCmd.addBit(0);
+
+  // PD0: This bit is ADC on/off', technically, but when both PD1 and PD0 are
+  // 0, then it leaves the ADC off *between* conversions, but powers it on
+  // *during* conversions. According to the datasheet the ADC is able to power
+  // up instantly and there are no delays incured by leaving the ADC powered
+  // off between conversions. Leaving the ADC on is intended for certain
+  // strategies that use external capacitors to filter out touchscreen noise.
+  // This doesn't apply to us, but there is one more consideration, which is
+  // that the PENIRQ' output used to trigger interrupts is disabled if
+  // this bit is HIGH (1). Since that's the only functionality of this bit
+  // we care about, we'll make it correspond directly to the user's
+  // IRQ setting.
+  controlCmd.addBit(!_interruptsEnabled);
+
+  Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
+      _spiDev,
+      controlCmd.command,   // reg_addr
+      ADDRBIT8_HIGH_TOREAD, // reg_type
+      2,                    // Width: 2, to get the 12-bits we need.
+      // It's a 12-bit value with the most-significant BIT first.
+      // Therefore, the first 1-byte read will read the 8 most-significant bits,
+      // and the next 1-byte read will read the 4 least-significant bits.
+      MSBFIRST,
+      1 // address_width
   );
 
   uint8_t spiOutputBuffer[2];
