@@ -110,9 +110,11 @@ public:
    * @parblock The voltage (in volts) connected to the TSC2046's VRef pin,
    * if any. `-1` (the default if the argument is not provided) indicates that
    * nothing is connected to the TSC2046's VRef pin. Connecting VRef to
-   * a voltage higher than 2.5V increases the accurace of **non**-touchscreen
-   * reads (temperature, battery voltage, and auxiliary voltage), and has no
-   * effect on touchscreen coordinate reads.
+   * a voltage higher than 2.5V increases the accuracy of **non**-touchscreen
+   * reads (temperature, battery voltage, and auxiliary voltage), and also
+   * directly determines the maximum voltage value that can be measured by
+   * Adafruit_TSC2046::readAuxiliaryVoltage. It has no effect on touchscreen
+   * coordinate reads.
    *
    * @note The TSC2046's VRef pin should either be connected to the same supply
    * as the TSC2046's Vin pin, or not connected at all (Vin should be connected
@@ -223,13 +225,34 @@ public:
    */
   float readBatteryVoltage();
 
+  /*! @brief Reads the voltage on the "AUX" pin, in volts.
+   *
+   * The TSC2046 allows you to measure the voltage of whatever you connect to
+   * the AUX pin, however the voltage cannot be higher than the voltage
+   * reference. See the documentation for the `vRef` parameter of
+   * Adafruit_TSC2046::begin for more information, but in summary if you don't
+   * connect anything to the "VRef" pin on your TSC2046, the maximum auxiliary
+   * voltage you can read is 2.5V. If you want to be able to read higher
+   * voltages, connect the same pin you connected to "Vin" on the TSC2046 to
+   * the VRef pin on the TSC2046, and then pass the voltage of those pins
+   * to the `vRef` paramter of Adafruit_TSC2046::begin, or to
+   * Adafruit_TSC2046::setVRef.
+   *
+   * Alternatively, if you want to measure voltages higher than the reference
+   * voltage, see Adafruit_TSC2046::readBatteryVoltage, which can read
+   * up to 6V.
+   *
+   * @returns The voltage on the AUX pin, in volts.
+   */
+  float readAuxiliaryVoltage();
+
   /*! @brief Gets the effective reference voltage, which is 2.5V if no external
    * reference voltage value was provided in Adafruit_TSC2046::begin or
    * Adafruit_TSC2046::setVRef, or the value of the `vRef` argument of those
    * functions otherwise.
    *
    * You probably don't need to call this function unless you're doing math
-   * on the touchscreen reads.
+   * directly on reads from this class.
    *
    * @returns The effective reference voltage in volts.
    *
