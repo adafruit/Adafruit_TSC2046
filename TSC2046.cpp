@@ -74,6 +74,10 @@ void Adafruit_TSC2046::setVRef(float vRef) {
   _vRef = vRef;
 }
 
+void Adafruit_TSC2046::setTouchedThreshold(float rTouchThreshold) {
+  _touchedThreshold = rTouchThreshold;
+}
+
 TSPoint Adafruit_TSC2046::getPoint() {
 
   int16_t xResult = readCoord(ADDR_DFR_X_POS);
@@ -99,7 +103,7 @@ bool Adafruit_TSC2046::isTouched() {
 
   // If the resistance is not infinity, NaN, some other non-finite number,
   // or 0, then the touchscreen is probably being touched.
-  return isfinite(point.z) && point.z != 0;
+  return isfinite(point.z) && point.z != 0 && point.z < _touchedThreshold;
 }
 
 void Adafruit_TSC2046::enableInterrupts(bool enable) {
