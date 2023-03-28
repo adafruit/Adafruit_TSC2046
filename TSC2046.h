@@ -101,6 +101,9 @@ public:
    * in Ohms (Ω), the unit for resistance. Pass that number as this parameter.
    * If your multimeter gives you a value in kilohms (kΩ), divide that number
    * by 1000 to get Ohms and pass that value.
+   *
+   * If you do not have a multimeter or otherwise don't have a measurement,
+   * `400` (400Ω) is a reasonable value to pass.
    * @endparblock
    *
    * @param vRef
@@ -174,11 +177,19 @@ public:
 
   /*! @brief Reads the temperature measurement in degrees Celsius.
    *
-   * @returns The temperature in degrees Celsius.
+   * @returns The temperature in degrees Celsius (°C).
    *
    * @see Adafruit_TSC2046::readTemperatureF.
    */
   float readTemperatureC();
+
+  /*! @brief Reads the temperature measurement in degreese Fahrenheit.
+   *
+   * @returns The temperature in degrees Fahrenheit (°F).
+   *
+   * @see Adafruit_TSC2046::readTemperatureC.
+   */
+  float readTemperatureF();
 
   /*! @brief Gets the effective reference voltage, which is 2.5V if no external
    * reference voltage value was provided in Adafruit_TSC2046::begin or
@@ -189,6 +200,8 @@ public:
    * on the touchscreen reads.
    *
    * @returns The effective reference voltage in volts.
+   *
+   * @see Adafruit_TSC2046::setVRef.
    */
   float effectiveVRef();
 
@@ -196,7 +209,6 @@ private:
   SPIClass *_spi;
   Adafruit_SPIDevice *_spiDev;
   int _spiCS;
-  int32_t _sensorId;
   int64_t _spiFrequency;
   uint32_t _xResistance;
   bool _interruptsEnabled = false;
