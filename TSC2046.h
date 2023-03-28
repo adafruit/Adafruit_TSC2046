@@ -159,9 +159,6 @@ public:
    */
   TSPoint(int16_t x, int16_t y, float z);
 
-  bool operator==(TSPoint rhs);
-  bool operator!=(TSPoint rhs);
-
   /*! @brief The full scale raw X coordinate from the touchscreen.
    * For the X-coordinate as a percentage, see TSPoint::xPercent.
    * If the touchscreen is not being touched, this value is meaningless.
