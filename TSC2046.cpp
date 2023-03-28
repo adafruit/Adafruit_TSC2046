@@ -127,6 +127,19 @@ float Adafruit_TSC2046::readTemperatureF() {
   return (9.f / 5.f) * celsius + 32;
 }
 
+float Adafruit_TSC2046::readBatteryVoltage() {
+
+  // According to the datasheet, the battery voltage readings are divided down
+  // by 4 to simplify the logic in the chip, which means we have to multiple
+  // it back up again.
+  const float VBAT_MULTIPLIER = 4.f;
+
+  uint16_t rawVBat = readExtra(ADDR_SER_VBAT);
+
+  // V_BAT = ADC_VALUE * 4 * effectiveVRef() / (2 ** ADC_SIZE)
+  return (rawVBat * VBAT_MULTIPLIER * effectiveVRef()) / 4096.f;
+}
+
 float Adafruit_TSC2046::effectiveVRef() {
   if (_vRef == -1) {
     return TSC2046_INTERNAL_VREF;

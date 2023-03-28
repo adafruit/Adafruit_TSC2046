@@ -212,6 +212,17 @@ public:
    */
   float readTemperatureF();
 
+  /*! @brief Reads the voltage on the "VBat" pin, in volts.
+   *
+   * The TSC2046 allows you to connect the positive voltage terminal of
+   * a battery to the "VBat" pin, and then monitor its voltage. The battery
+   * voltage can be (inclusively) between 0V and 6V, regardless of the voltage
+   * supply provided to Vin/Vcc.
+   *
+   * @returns The voltage of the connected battery, in volts.
+   */
+  float readBatteryVoltage();
+
   /*! @brief Gets the effective reference voltage, which is 2.5V if no external
    * reference voltage value was provided in Adafruit_TSC2046::begin or
    * Adafruit_TSC2046::setVRef, or the value of the `vRef` argument of those
