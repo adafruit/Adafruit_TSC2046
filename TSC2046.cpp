@@ -148,6 +148,14 @@ float Adafruit_TSC2046::effectiveVRef() {
   }
 }
 
+float Adafruit_TSC2046::readAuxiliaryVoltage() {
+
+  uint16_t rawVAux = readExtra(ADDR_SER_AUX);
+
+  // V_AUX = (ADC_VALUE * effectiveVRef()) / (2 ** ADC_SIZE)
+  return (rawVAux * effectiveVRef()) / 4096.f;
+}
+
 float Adafruit_TSC2046::readTemperatureK() {
 
   // There are two ways to measure temperature on this chip.
