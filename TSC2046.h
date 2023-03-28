@@ -102,6 +102,19 @@
  * `point.yPercent()`. The pressure is in `point.z`, and its value *decreases*
  * as pressure *increases*.
  *
+ * @note Adafruit_TSC2046::begin has one particularly notable required
+ * parameter, @p xResistance — the value you pass here is something you must
+ * measure with a multimeter. Set your multimeter to measure resistance,
+ * place one probe on the pin-hole labeled "X-" on your TSC2046 breakout board,
+ * and place the other probe on the pin-hole labled "X+". Your multimeter
+ * should show you a number in ohms (Ω), the unit for resistance. Pass that
+ * number as the @p xResistance argument. If your multimeter gives you a value
+ * in kilohms (kΩ), divide that number by 1000 to get ohms and pass that
+ * value for the @p xResistance argument. If you do not have a multimeter or
+ * otherwise don't have a measurement, `400` (400Ω) is a reasonable value to
+ * use here, though note that the pressure measurements returned by
+ * Adafruit_TSC2046::getPoint will be inaccurate in that case.
+ *
  * Below is a simple example; a more complete example can be found in the
  * `examples/` directory.
  *
@@ -240,11 +253,11 @@ public:
    * breakout. With a multimeter set to measure resistance, place one probe on
    * the pin-hole labled "X-" on your TSC2046 breakout board, and place the
    * other probe on the pin-hole labled "X+". Your multimeter should show you a
-   * number in Ohms (Ω), the unit for resistance. Pass that number as this
+   * number in ohms (Ω), the unit for resistance. Pass that number as this
    * parameter. If your multimeter gives you a value in kilohms (kΩ), divide
    * that number by 1000 to get Ohms and pass that value. \n
    * If you do not have a multimeter or otherwise don't have a measurement,
-   * `400` (400Ω) is a reasonable value to pass.
+   * `400` (400Ω) is a reasonable value to use here.
    *
    * @param vRef The voltage (in volts) connected to the TSC2046's VRef pin,
    * if any. `-1` (the default if the argument is not provided) indicates that
