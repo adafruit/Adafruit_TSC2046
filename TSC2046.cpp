@@ -118,6 +118,11 @@ float Adafruit_TSC2046::readTemperatureC() {
   return readTemperatureK() - 273;
 }
 
+float Adafruit_TSC2046::readTemperatureF() {
+  float celsius = readTemperatureC();
+  return (9.f / 5.f) * celsius + 32;
+}
+
 float Adafruit_TSC2046::effectiveVRef() {
   if (_vRef == -1) {
     return TSC2046_INTERNAL_VREF;
