@@ -37,7 +37,7 @@ Adafruit_TSC2046::~Adafruit_TSC2046() {
   }
 }
 
-void Adafruit_TSC2046::begin(uint32_t xResistance, float vRef = -1,
+void Adafruit_TSC2046::begin(uint32_t xResistance, float vRef,
                              int spiChipSelect, SPIClass &spi,
                              uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
@@ -349,8 +349,8 @@ uint16_t Adafruit_TSC2046::readExtra(uint8_t channelSelect) {
   return result;
 }
 
-static uint16_t Adafruit_TSC2046::parse12BitValue(uint8_t spiUpperByte,
-                                                  uint8_t spiLowerByte) {
+uint16_t Adafruit_TSC2046::parse12BitValue(uint8_t spiUpperByte,
+                                           uint8_t spiLowerByte) {
 
   // `spiUpperByte` will contain bits 11:5.
   // `spiLowerByte` will contain bits 4:0.

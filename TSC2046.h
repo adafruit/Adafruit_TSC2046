@@ -86,7 +86,8 @@
  * If you *do* override the reference voltage, pass the voltage you're giving
  * it as Adafruit_TSC2046::begin's @p vRef parameter.
  *
- * [attachInterrupt]: https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+ * [attachInterrupt]:
+ * https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
  *
  * @subsection code Using the library
  *
