@@ -155,7 +155,12 @@
 class TSPoint {
 public:
   /*! @brief Create a new TSPoint with these exact values.
-   * Not usually needed in user code.
+   * You usually don't need to call this constructor in user code.
+   * Call Adafruit_TSC2046::getPoint instead.
+   *
+   * @param x The value to initialize the X coordinate to.
+   * @param y The value to initalize the Y coordinate to.
+   * @param z The value to initalize the Z coordinate/pressure to.
    */
   TSPoint(int16_t x, int16_t y, float z);
 
@@ -181,11 +186,19 @@ public:
 
   /*! @brief The X-coordinate as a percentage. Note that physical touchscreens
    * vary, and the range of yours may not perfectly extend from 0% to 100%.
+   * Like TSPoint::x, this value is meaningless if the touchscreen is not
+   * being touched.
+   *
+   * @returns The X-coordinate as a percentage of the maximum coordinate.
    */
   float xPercent();
 
   /*! @brief The Y-coordinate as a percentage. Note that physical touchscreens
    * vary, and the range of yours may not perfectly extend from 0% to 100%.
+   * Like TSPoint::y, this value is meaningless if the touchscreen is not
+   * being touched.
+   *
+   * @returns the Y-coordinate as a percentage of the maximum coordinate.
    */
   float yPercent();
 };
@@ -300,6 +313,8 @@ public:
    * @brief Gets the coordinates of the the current touch on the touchscreen.
    * Use Adafruit_TSC2046::isTouched to determine if the touchscreen is being
    * touched in the first place.
+   *
+   * @returns The X, Y, and Z (pressure) coordinates as a @ref TSPoint object.
    *
    * @see ::TSPoint.
    */
