@@ -150,6 +150,24 @@ public:
   void setVRef(float vRef);
 
   /*!
+   * @brief Sets the threshold for Adafruit_TSC2046::isTouched.
+   *
+   * @param rTouchThreshold
+   * @parblock The resistance value (technically in Ohms) to use
+   * as the threshold for Adafruit_TSC2046::isTouched. Any pressure readings
+   * that are higher than the value provided here are considered "not touching"
+   * (remember that the pressure readings get LOWER as the physical pressure
+   * increases, see TSPoint::z). Also note that regardless of the threshold value,
+   * resistances of 0 and nonfinite numbers (like infinity) are always
+   * considered not touching.
+   *
+   * If not set, the default value is `100000` (100kΩ).
+   *
+   * @endparblock
+   */
+  void setTouchedThreshold(float rTouchThreshold);
+
+  /*!
    * @brief Gets the coordinates of the the current touch on the touchscreen.
    * Use Adafruit_TSC2046::isTouched to determine if the touchscreen is being
    * touched in the first place.
@@ -161,6 +179,9 @@ public:
   /*! @brief Determines if the touchscreen is currently being touched.
    * The X and Y coordinates returned by Adafruit_TSC2046::getPoint are
    * meaningless if this is false.
+   *
+   * You can also change the threshold used to determine if the touchscreen
+   * is being touched with Adafruit_TSC2046::setTouchedThreshold.
    *
    * @returns True if the touchscreen is being touched, false if it is not.
    */
@@ -211,6 +232,14 @@ private:
   int _spiCS;
   int64_t _spiFrequency;
   uint32_t _xResistance;
+
+  // NOTE(Qyriad): In my testing, the absolute most delicate touch where the X
+  // and Y coordinate values were not completely nonsensical had R_TOUCH at
+  // about 5.7kΩ (and the X and Y coordinates were still fairly off), and
+  // every complete false positive was above 100kΩ. To be on the safe side
+  // we'll use 100kΩ as the default threshold.
+  float _touchedThreshold = 100000.f;
+
   bool _interruptsEnabled = false;
   float _vRef;
 
