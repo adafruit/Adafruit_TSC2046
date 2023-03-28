@@ -104,7 +104,6 @@ public:
  */
 class Adafruit_TSC2046 {
 public:
-
   ~Adafruit_TSC2046();
 
   /*!
@@ -149,8 +148,8 @@ public:
    * to 2 MHz if not specified. Must not be higher than 2 MHz, per the TSC2046
    * datasheet.
    */
-  void begin(int spiChipSelect, uint32_t xResistance, float vRef = -1, SPIClass &spi = SPI,
-             uint32_t spiFrequency = 2L * 1000L * 1000L);
+  void begin(int spiChipSelect, uint32_t xResistance, float vRef = -1,
+             SPIClass &spi = SPI, uint32_t spiFrequency = 2L * 1000L * 1000L);
 
   /*!
    * @brief Indicates the voltage connected to the TSC2046's "VRef" pin, if any.
@@ -171,8 +170,8 @@ public:
    * as the threshold for Adafruit_TSC2046::isTouched. Any pressure readings
    * that are higher than the value provided here are considered "not touching"
    * (remember that the pressure readings get LOWER as the physical pressure
-   * increases, see TSPoint::z). Also note that regardless of the threshold value,
-   * resistances of 0 and nonfinite numbers (like infinity) are always
+   * increases, see TSPoint::z). Also note that regardless of the threshold
+   * value, resistances of 0 and nonfinite numbers (like infinity) are always
    * considered not touching.
    *
    * If not set, the default value is `100000` (100kΩ).
@@ -216,8 +215,10 @@ public:
    *
    * @param enable True to enable interrupts, false to disable them.
    *
-   * here: https://reference.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
-   * mask: https://www.arduino.cc/reference/en/language/functions/external-interrupts/detachinterrupt/
+   * [here]:
+   * https://reference.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
+   * [mask]:
+   * https://www.arduino.cc/reference/en/language/functions/external-interrupts/detachinterrupt/
    */
   void enableInterrupts(bool enable);
 

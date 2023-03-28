@@ -18,9 +18,7 @@
 #define ADDR_DFR_Z2_POS (0b100)
 #define ADDR_DFR_X_POS (0b101)
 
-
 const float TSC2046_INTERNAL_VREF = 2.5;
-
 
 TSPoint::TSPoint(int16_t x, int16_t y, float z) {
   this->x = x;
@@ -39,8 +37,9 @@ Adafruit_TSC2046::~Adafruit_TSC2046() {
   }
 }
 
-void Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance, float vRef = -1,
-                             SPIClass &spi, uint32_t spiFrequency) {
+void Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance,
+                             float vRef = -1, SPIClass &spi,
+                             uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
   _spi = &spi;
   _spiFrequency = spiFrequency;
@@ -61,18 +60,15 @@ void Adafruit_TSC2046::begin(int spiChipSelect, uint32_t xResistance, float vRef
   // and the IN side changes on/after the leading edge of the clock, which
   // means CPHA = 0.
   // Therefore, our SPI mode is 0.
-  _spiDev = new Adafruit_SPIDevice(_spiCS, // cspin
-      _spiFrequency, // freq
-      SPI_BITORDER_MSBFIRST, // dataOrder
-      SPI_MODE0, // dataMode
-      _spi
-    );
+  _spiDev = new Adafruit_SPIDevice(_spiCS,                // cspin
+                                   _spiFrequency,         // freq
+                                   SPI_BITORDER_MSBFIRST, // dataOrder
+                                   SPI_MODE0,             // dataMode
+                                   _spi);
   _spiDev->begin();
 }
 
-void Adafruit_TSC2046::setVRef(float vRef) {
-  _vRef = vRef;
-}
+void Adafruit_TSC2046::setVRef(float vRef) { _vRef = vRef; }
 
 void Adafruit_TSC2046::setTouchedThreshold(float rTouchThreshold) {
   _touchedThreshold = rTouchThreshold;
@@ -130,9 +126,7 @@ void Adafruit_TSC2046::enableInterrupts(bool enable) {
   readCoord(0);
 }
 
-float Adafruit_TSC2046::readTemperatureC() {
-  return readTemperatureK() - 273;
-}
+float Adafruit_TSC2046::readTemperatureC() { return readTemperatureK() - 273; }
 
 float Adafruit_TSC2046::readTemperatureF() {
   float celsius = readTemperatureC();
