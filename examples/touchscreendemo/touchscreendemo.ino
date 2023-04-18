@@ -36,7 +36,11 @@
 Adafruit_TSC2046 touchscreen;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  // Wait till serial connection opens for native USB devices
+  while (!Serial) {
+    delay(10);
+  }
 
   // For a 400Ω resistance across X- and X+.
   touchscreen.begin(400);
