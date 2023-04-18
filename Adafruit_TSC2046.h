@@ -150,13 +150,8 @@
 #ifndef TSC2046_H
 #define TSC2046_H
 
-#if ARDUINO >= 100
 #include "Arduino.h"
 #include "Print.h"
-#else
-#include "WProgram.h"
-#endif
-
 #include <Adafruit_BusIO_Register.h>
 #include <Adafruit_SPIDevice.h>
 #include <stdint.h>
