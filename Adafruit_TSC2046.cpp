@@ -153,7 +153,7 @@ float Adafruit_TSC2046::readBatteryVoltage() {
 }
 
 float Adafruit_TSC2046::effectiveVRef() {
-  if (_vRef == -1) {
+  if (_vRef < 0) {
     return TSC2046_INTERNAL_VREF;
   } else {
     return _vRef;
@@ -301,7 +301,7 @@ uint16_t Adafruit_TSC2046::readExtra(uint8_t channelSelect) {
   controlCmd.addBit(1);
 
   // PD1: Enable/disable' internal VREF.
-  if (_vRef != -1) {
+  if (_vRef > 0) {
     // The user connected an external VREF, so turn the internal one off.
     controlCmd.addBit(0);
   } else {
