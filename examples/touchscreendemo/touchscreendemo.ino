@@ -42,6 +42,8 @@ void setup() {
     delay(10);
   }
 
+  Serial.println("Adafruit TSC2046 touchscreen demo");
+
   // For a 400Ω resistance across X- and X+.
   touchscreen.begin(400);
 }
