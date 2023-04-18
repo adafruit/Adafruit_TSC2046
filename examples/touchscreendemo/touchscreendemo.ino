@@ -34,6 +34,8 @@
 
 
 Adafruit_TSC2046 touchscreen;
+#define TSC_CS         10  // chip select pin
+#define TS_RESISTANCE 400  // For a 400Ω resistance across X- and X+.
 
 void setup() {
   Serial.begin(115200);
@@ -44,8 +46,7 @@ void setup() {
 
   Serial.println("Adafruit TSC2046 touchscreen demo");
 
-  // For a 400Ω resistance across X- and X+.
-  touchscreen.begin(400);
+  touchscreen.begin(TSC_CS, &SPI, TS_RESISTANCE);
 }
 
 

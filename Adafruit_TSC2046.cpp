@@ -37,11 +37,11 @@ Adafruit_TSC2046::~Adafruit_TSC2046() {
   }
 }
 
-void Adafruit_TSC2046::begin(uint32_t xResistance, float vRef,
-                             int spiChipSelect, SPIClass &spi,
+void Adafruit_TSC2046::begin(int spiChipSelect, SPIClass *the_spi,
+                             uint32_t xResistance,
                              uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
-  _spi = &spi;
+  _spi = the_spi;
   _spiFrequency = spiFrequency;
   _xResistance = xResistance;
 
@@ -50,7 +50,8 @@ void Adafruit_TSC2046::begin(uint32_t xResistance, float vRef,
     delete _spiDev;
   }
 
-  setVRef(vRef);
+  // default to nothing connected to VRef, can always call setVRef later if desired
+  setVRef(-1);
 
   // Regarding SPI mode, timing diagrams on the datasheet show DCLK idling LOW,
   // which means the leading edge is a rising edge, which means CPOL = 0.
@@ -126,7 +127,9 @@ void Adafruit_TSC2046::enableInterrupts(bool enable) {
   readCoord(0);
 }
 
-float Adafruit_TSC2046::readTemperatureC() { return readTemperatureK() - 273; }
+float Adafruit_TSC2046::readTemperatureC() { 
+  return readTemperatureK() - 273; 
+}
 
 float Adafruit_TSC2046::readTemperatureF() {
   float celsius = readTemperatureC();
