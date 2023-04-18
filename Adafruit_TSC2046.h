@@ -147,8 +147,8 @@
  * @see TSPoint
  */
 
-#ifndef TSC2046_H
-#define TSC2046_H
+#ifndef ADA_TSC2046_H
+#define ADA_TSC2046_H
 
 #include "Arduino.h"
 #include "Print.h"
