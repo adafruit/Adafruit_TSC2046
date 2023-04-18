@@ -47,6 +47,7 @@ void setup() {
   Serial.println("Adafruit TSC2046 touchscreen demo");
 
   touchscreen.begin(TSC_CS, &SPI, TS_RESISTANCE);
+  touchscreen.enableInterrupts(true);
 }
 
 
@@ -54,10 +55,10 @@ void setup() {
 void displayTouchPoint(TSPoint point) {
   // Print the touchscreen coordinates as percents, which are nice and
   // readable at a glance.
-  Serial.print(point.xPercent() * 100, 1);
-  Serial.print("%    ");
-  Serial.print(point.yPercent() * 100, 1);
-  Serial.print("%    ");
+  Serial.print(point.x);
+  Serial.print("    ");
+  Serial.print(point.y);
+  Serial.print("    ");
 
   // Z measures the pressure; the value for Z *decreases* as the physical
   // pressure *increases*.
@@ -66,9 +67,7 @@ void displayTouchPoint(TSPoint point) {
 }
 
 void loop() {
-
-  // Measure stuff every half second.
-  delay(500);
+  delay(50); // Add delay to avoid overloading the serial monitor
 
   // Check that the touchscreen is being touched at all before getting
   // coordinates. Otherwise the coordinate values we get will be garbage.
@@ -82,6 +81,16 @@ void loop() {
     // let's measure the temperature and print it over serial.
     float tempC = touchscreen.readTemperatureC();
     Serial.print(tempC);
-    Serial.print(" C\n");
+    Serial.print(" C\t\t");
+
+    Serial.print("Aux: ");
+    Serial.print(touchscreen.readAuxiliaryVoltage());
+    Serial.print(" V\t");
+
+    Serial.print("Bat: ");
+    Serial.print(touchscreen.readBatteryVoltage());
+    Serial.println(" V\n");
+
   }
+
 }
