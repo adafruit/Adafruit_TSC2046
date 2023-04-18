@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "TSC2046.h"
+#include "Adafruit_TSC2046.h"
 
 // Multiplexer addresses for the various outputs in single-ended reference mode.
 #define ADDR_SER_TEMP0 (0b000)

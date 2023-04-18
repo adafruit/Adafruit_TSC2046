@@ -1,4 +1,4 @@
-#include <TSC2046.h>
+#include <Adafruit_TSC2046.h>
 
 /* To use this library you will also need the [Adafruit BusIO]
    (https://www.arduino.cc/reference/en/libraries/adafruit-busio/)
