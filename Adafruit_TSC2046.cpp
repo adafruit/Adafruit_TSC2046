@@ -38,8 +38,7 @@ Adafruit_TSC2046::~Adafruit_TSC2046() {
 }
 
 void Adafruit_TSC2046::begin(int spiChipSelect, SPIClass *the_spi,
-                             uint32_t xResistance,
-                             uint32_t spiFrequency) {
+                             uint32_t xResistance, uint32_t spiFrequency) {
   _spiCS = spiChipSelect;
   _spi = the_spi;
   _spiFrequency = spiFrequency;
@@ -50,7 +49,8 @@ void Adafruit_TSC2046::begin(int spiChipSelect, SPIClass *the_spi,
     delete _spiDev;
   }
 
-  // default to nothing connected to VRef, can always call setVRef later if desired
+  // default to nothing connected to VRef, can always call setVRef later if
+  // desired
   setVRef(-1);
 
   // Regarding SPI mode, timing diagrams on the datasheet show DCLK idling LOW,
@@ -69,9 +69,7 @@ void Adafruit_TSC2046::begin(int spiChipSelect, SPIClass *the_spi,
   _spiDev->begin();
 }
 
-void Adafruit_TSC2046::setVRef(float vRef) { 
-  _vRef = vRef; 
-}
+void Adafruit_TSC2046::setVRef(float vRef) { _vRef = vRef; }
 
 void Adafruit_TSC2046::setTouchedThreshold(float rTouchThreshold) {
   _touchedThreshold = rTouchThreshold;
@@ -105,7 +103,6 @@ TSPoint Adafruit_TSC2046::getPoint() {
 
   float rTouch = _xResistance * (xResult / 4096.f) *
                  (((float)z2Result / (float)z1Result) - 1.f);
-  
 
   return TSPoint(xResult, yResult, rTouch);
 }
@@ -130,9 +127,7 @@ void Adafruit_TSC2046::enableInterrupts(bool enable) {
   readCoord(0);
 }
 
-float Adafruit_TSC2046::readTemperatureC() { 
-  return readTemperatureK() - 273; 
-}
+float Adafruit_TSC2046::readTemperatureC() { return readTemperatureK() - 273; }
 
 float Adafruit_TSC2046::readTemperatureF() {
   float celsius = readTemperatureC();

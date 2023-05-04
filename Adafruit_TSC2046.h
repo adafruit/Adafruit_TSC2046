@@ -286,8 +286,8 @@ public:
    *
    * [SPI]: https://docs.arduino.cc/learn/communications/spi
    */
-  void begin(int spiChipSelect, SPIClass *the_spi = &SPI, 
-             uint32_t xResistance = 400, 
+  void begin(int spiChipSelect, SPIClass *the_spi = &SPI,
+             uint32_t xResistance = 400,
              uint32_t spiFrequency = 2L * 1000L * 1000L);
 
   /*!
