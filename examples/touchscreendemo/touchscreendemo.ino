@@ -53,8 +53,6 @@ void setup() {
 
 // Prints the three coordinates in nice columns.
 void displayTouchPoint(TSPoint point) {
-  // Print the touchscreen coordinates as percents, which are nice and
-  // readable at a glance.
   Serial.print(point.x);
   Serial.print("    ");
   Serial.print(point.y);
