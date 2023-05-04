@@ -147,16 +147,11 @@
  * @see TSPoint
  */
 
-#ifndef TSC2046_H
-#define TSC2046_H
+#ifndef ADA_TSC2046_H
+#define ADA_TSC2046_H
 
-#if ARDUINO >= 100
 #include "Arduino.h"
 #include "Print.h"
-#else
-#include "WProgram.h"
-#endif
-
 #include <Adafruit_BusIO_Register.h>
 #include <Adafruit_SPIDevice.h>
 #include <stdint.h>
@@ -291,8 +286,9 @@ public:
    *
    * [SPI]: https://docs.arduino.cc/learn/communications/spi
    */
-  void begin(uint32_t xResistance, float vRef = -1, int spiChipSelect = SS,
-             SPIClass &spi = SPI, uint32_t spiFrequency = 2L * 1000L * 1000L);
+  void begin(int spiChipSelect, SPIClass *the_spi = &SPI, 
+             uint32_t xResistance = 400, 
+             uint32_t spiFrequency = 2L * 1000L * 1000L);
 
   /*!
    * @brief Indicates the voltage connected to the TSC2046's "VRef" pin, if any.

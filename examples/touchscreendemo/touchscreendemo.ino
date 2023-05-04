@@ -1,4 +1,4 @@
-#include <TSC2046.h>
+#include <Adafruit_TSC2046.h>
 
 /* To use this library you will also need the [Adafruit BusIO]
    (https://www.arduino.cc/reference/en/libraries/adafruit-busio/)
@@ -34,12 +34,20 @@
 
 
 Adafruit_TSC2046 touchscreen;
+#define TSC_CS         10  // chip select pin
+#define TS_RESISTANCE 400  // For a 400Ω resistance across X- and X+.
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  // Wait till serial connection opens for native USB devices
+  while (!Serial) {
+    delay(10);
+  }
 
-  // For a 400Ω resistance across X- and X+.
-  touchscreen.begin(400);
+  Serial.println("Adafruit TSC2046 touchscreen demo");
+
+  touchscreen.begin(TSC_CS, &SPI, TS_RESISTANCE);
+  touchscreen.enableInterrupts(true);
 }
 
 
@@ -47,10 +55,10 @@ void setup() {
 void displayTouchPoint(TSPoint point) {
   // Print the touchscreen coordinates as percents, which are nice and
   // readable at a glance.
-  Serial.print(point.xPercent() * 100, 1);
-  Serial.print("%    ");
-  Serial.print(point.yPercent() * 100, 1);
-  Serial.print("%    ");
+  Serial.print(point.x);
+  Serial.print("    ");
+  Serial.print(point.y);
+  Serial.print("    ");
 
   // Z measures the pressure; the value for Z *decreases* as the physical
   // pressure *increases*.
@@ -59,9 +67,7 @@ void displayTouchPoint(TSPoint point) {
 }
 
 void loop() {
-
-  // Measure stuff every half second.
-  delay(500);
+  delay(50); // Add delay to avoid overloading the serial monitor
 
   // Check that the touchscreen is being touched at all before getting
   // coordinates. Otherwise the coordinate values we get will be garbage.
@@ -75,6 +81,16 @@ void loop() {
     // let's measure the temperature and print it over serial.
     float tempC = touchscreen.readTemperatureC();
     Serial.print(tempC);
-    Serial.print(" C\n");
+    Serial.print(" C\t\t");
+
+    Serial.print("Aux: ");
+    Serial.print(touchscreen.readAuxiliaryVoltage());
+    Serial.print(" V\t");
+
+    Serial.print("Bat: ");
+    Serial.print(touchscreen.readBatteryVoltage());
+    Serial.println(" V\n");
+
   }
+
 }
