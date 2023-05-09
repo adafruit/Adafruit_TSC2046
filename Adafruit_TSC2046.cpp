@@ -203,63 +203,48 @@ float Adafruit_TSC2046::readTemperatureK() {
 
 uint16_t Adafruit_TSC2046::readCoord(uint8_t channelSelect) {
 
-  CommandBits controlCmd;
+  Command cmd;
+  cmd.start = 1;
+  cmd.addr = channelSelect;
 
-  // START bit, always 1.
-  controlCmd.addBit(1);
+  // Use 12-bit conversions.
+  cmd.use8BitConv = 0;
 
-  // A2:A0: the channel select/"address" bits, which control the multiplexer
-  // output. This will be one of the `ADDR_` values near the top of the file.
-  controlCmd.addBits(channelSelect, 3);
-
-  // ADC conversion mode: LOW for 12-bit mode, and HIGH for 8-bit mode.
-  controlCmd.addBit(0);
-
-  // SER/DFR': use the internal or external VREF (HIGH), or use the voltage
-  // across the touchscreen drivers as the ADC reference voltage (LOW).
-  // The latter is more accurate, but is only available for touchscreen
-  // coordinate reads, and not available for temperature, VBAT, or the other
-  // extras. In this case, however, we pull it LOW for the increased
-  // accuracy.
-  controlCmd.addBit(0);
+  // Differential reference mode is only available for touchscreen reads,
+  // but is more accurate. Since touchscreen coordinates are what we're trying
+  // to read here, let's make use of that increased accuracy by leaving this
+  // LOW to disable single-ended reference mode (and thus enable differential
+  // reference mode).
+  cmd.singleEndedRef = 0;
 
   // NOTE(Qyriad): The datasheet says that PD0 = 1 disables interrupts, however
   // in my testing PENIRQ' goes low when the touchscreen is touched even if
   // PD0 = 1, and the only case where PENIRQ' does not respond to touches is
-  // when *both* PD0 and PD1 are HIGH.
+  // when *both* PD0 and PD1 are high.
   if (_interruptsEnabled) {
-    // PD1: Enable/disable' internal VREF. We're using differential reference
-    // mode, so VREF (internal or external) doesn't matter at all, so let's
-    // just leave it off.
-    controlCmd.addBit(0);
+    // We're using differential reference mode, so VREF (internal or external)
+    // doesn't matter at all, so let's just leave it off.
+    cmd.enableInternalVRef = 0;
 
-    // PD0: ADC on/off', sort of. When both PD1 and PD0 are LOW, then it leaves
-    // the ADC off *between* conversions, but powers it on *during*
-    // conversions. According to the datasheet the ADC is able to power up
-    // instantly and there is no delay from leaving the ADC powered off
-    // between conversions. Leaving the ADC on is intended for certain
-    // strategies that use external capacitors to filter out touchscreen noise.
-    // This bit also, with PD1, controls whether or not interrupts are enabled.
     // Interrupts are *only* disabled when *both* PD1 and PD0 are HIGH.
     // In this if block, interrupts are enabled, so we can leave this LOW
     // and have the ADC power down between conversions to save power.
-    controlCmd.addBit(0);
+    cmd.enableOrIdleADC = 0;
   } else {
-    // PD1: Enable/disable' internal VREF. We're using differential reference
-    // mode, so VREF (internal or external) doesn't matter at all. However,
-    // this value *does* affect whether or not interrupts or enabled.
-    // If we explicitly want to disable interrupts, we have to set this bit
-    // HIGH, which consumes more power.
-    controlCmd.addBit(1);
+    // We're using differential reference mode, so VREF (internal or external)
+    // doesn't matter at all. However, this value *does* affect whether or not
+    // interrupts are enabled. If we explicitly want to disable interrupts, we
+    // have to set this bit HIGH, which consumes more power.
+    cmd.enableInternalVRef = 1;
 
-    // PD0: ADC on/off'. We want the ADC on, and also this value has to be
-    // HIGH to disable interrupts.
-    controlCmd.addBit(1);
+    //  We want the ADC on, and also this value has to be HIGH to disable
+    // interrupts.
+    cmd.enableOrIdleADC = 1;
   }
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
       _spiDev,
-      controlCmd.command,   // reg_addr
+      cmd.word,   // reg_addr
       ADDRBIT8_HIGH_TOREAD, // reg_type
       2,                    // Width: 2, to get the 12-bits we need.
       // It's a 12-bit value with the most-significant BIT first.
@@ -275,51 +260,36 @@ uint16_t Adafruit_TSC2046::readCoord(uint8_t channelSelect) {
 }
 
 uint16_t Adafruit_TSC2046::readExtra(uint8_t channelSelect) {
-  CommandBits controlCmd;
+  Command controlCmd;
+  controlCmd.start = 1;
+  controlCmd.addr = channelSelect;
 
-  // START bit, always 1.
-  controlCmd.addBit(1);
+  // Use 12-bit conversions.
+  controlCmd.use8BitConv = 0;
 
-  // A2:A0: the channel select/"address" bits, which control the multiplexer
-  // output. This will be one of the `ADDR` values near the top of the file.
-  controlCmd.addBits(channelSelect, 3);
+  // Differential reference mode is more accurate, but is only available for
+  // touchscreen coordinate reads. Since we're reading the "extras"
+  // (temperature, VBAT, etc), we keep this HIGH to use single-ended reference
+  // mode.
+  controlCmd.singleEndedRef = 1;
 
-  // ADC conversion mode: LOW for 12-bit mode, and HIGH for 8-bit mode.
-  controlCmd.addBit(0);
-
-  // SER/DFR': use the internal or external VREF (HIGH), or use the voltage
-  // across the touchscreen drivers as the ADC reference voltage (LOW).
-  // The latter is more accurate, but is only available for touchscreen
-  // coordinate reads, and not available for temperature, VBAT, or the other
-  // extras. So in this case we keep this HIGH so we can read things like
-  // VBAT.
-  controlCmd.addBit(1);
-
-  // PD1: Enable/disable' internal VREF.
   if (_vRef > 0) {
     // The user connected an external VREF, so turn the internal one off.
-    controlCmd.addBit(0);
+    controlCmd.enableInternalVRef = 0;
   } else {
     // The user did not connect an external VREF, so turn the internal one on.
-    controlCmd.addBit(1);
+    controlCmd.enableInternalVRef = 1;
   }
 
-  // PD0: This bit is ADC on/off', technically, but when both PD1 and PD0 are
-  // 0, then it leaves the ADC off *between* conversions, but powers it on
-  // *during* conversions. According to the datasheet the ADC is able to power
-  // up instantly and there are no delays incured by leaving the ADC powered
-  // off between conversions. Leaving the ADC on is intended for certain
-  // strategies that use external capacitors to filter out touchscreen noise.
-  // This doesn't apply to us, but there is one more consideration, which is
-  // that the PENIRQ' output used to trigger interrupts is disabled if
-  // this bit is HIGH (1). Since that's the only functionality of this bit
-  // we care about, we'll make it correspond directly to the user's
-  // IRQ setting.
-  controlCmd.addBit(!_interruptsEnabled);
+  // Leaving the ADC off has no downsides, except that the PENIRQ' output
+  // used to trigger interrupts is also disabled if this bit is HIGH. Since
+  // that's the only functionality of this bit we care about, we'll make it
+  // directly correspond to the user's IRQ settings.
+  controlCmd.enableOrIdleADC = !_interruptsEnabled;
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
       _spiDev,
-      controlCmd.command,   // reg_addr
+      controlCmd.word,   // reg_addr
       ADDRBIT8_HIGH_TOREAD, // reg_type
       2,                    // Width: 2, to get the 12-bits we need.
       // It's a 12-bit value with the most-significant BIT first.
@@ -332,18 +302,4 @@ uint16_t Adafruit_TSC2046::readExtra(uint8_t channelSelect) {
   // We can read the two bytes, concat'd to a 16-bit value
   // then drop bottom 3 bits and mask away top bit
   return (controlReg.read() >> 3) & 0xFFF;
-}
-
-CommandBits::CommandBits(uint8_t value) { command = value; }
-
-void CommandBits::addBit(bool value) {
-  uint8_t bit = value & 1;
-  command = (command << 1) | bit;
-}
-
-void CommandBits::addBits(uint8_t value, uint8_t length) {
-  uint8_t mask = (1 << length) - 1;
-  uint8_t bits = value & mask;
-
-  command = (command << length) | bits;
 }

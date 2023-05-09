@@ -156,6 +156,7 @@
 #include <Adafruit_SPIDevice.h>
 #include <stdint.h>
 
+
 /*!
  * @brief The type returned by Adafruit_TSC2046::getPoint.
  *
@@ -455,20 +456,55 @@ private:
   static uint16_t parse12BitValue(uint8_t spiUpperByte, uint8_t spiLowerByte);
 };
 
+// NOTE: Bitfield structs like these are not generally portable as the union'd
+// word can be different on machines of different endianness. Normally we would
+// detect a big endian platform with #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__,
+// and #error in that case. However, here, our struct is only 1 byte wide, so
+// byte order shouldn't come into play.
 /*! @private */
-class CommandBits {
-public:
-  /*! @private */
-  CommandBits(uint8_t value = 0);
+union Command {
+  // NOTE: The order these are defined in is the opposite as they appear in the
+  // datasheet, because bitfield structs are least-significant-field first.
+  struct {
+    /*!
+     * PD0: This bit is technically for enabling (HIGH) or disabling (LOW) the ADC,
+     * but when PD1 and PD0 are both 0, then it leaves the ADC off *between* conversions,
+     * but powers it on *during* conversions. According to the datasheet the ADC is able
+     * to power up instantly and there are no delays incured by leaving the ADC powered
+     * off between conversions. Leaving the ADC on is intended for certain strategies
+     * that use external capacitors to filter out touchscreen noise.
+     * This doesn't apply to us, but there is one more consideration, which is
+     * that the PENIRQ' output used to trigger interrupts is disabled if this
+     * bit is HIGH (1).
+     */
+    uint8_t enableOrIdleADC : 1;
 
-  /*! @private */
-  void addBit(bool value);
+    /*! PD1: Enable (HIGH) or disable (LOW) the internal VREF. */
+    uint8_t enableInternalVRef : 1;
 
-  /*! @private */
-  void addBits(uint8_t value, uint8_t length);
+    /*!
+     * SER/DFR': use the internal or external VREF (HIGH), or use the voltage
+     * across the touchscreen drivers as the ADC reference voltage (LOW).
+     * The latter is more accurate, but is only available for touchscreen
+     * coordinate reads, and not available for temperature, VBAT, or the other
+     * extras.
+     */
+    uint8_t singleEndedRef : 1;
 
-  /*! @private */
-  uint8_t command;
+    /*! ADC conversion mode: LOW for 12-bit mode, and HIGH for 8-bit mode. */
+    uint8_t use8BitConv : 1;
+
+    /*!
+     * A2:A0: the channel select/"address" bits, which control the multiplexer
+     * output. This will be one of the `ADDR` values near the top of the file.
+     */
+    uint8_t addr  : 3;
+
+    /*! START bit, always 1. */
+    uint8_t start : 1;
+  };
+  uint8_t word;
 };
+
 
 #endif
