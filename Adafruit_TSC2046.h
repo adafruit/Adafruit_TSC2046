@@ -261,7 +261,7 @@ public:
    * if not provided, which is also the default chip select pin of the
    * [default SPI interface][SPI].
    *
-   * @param spi The SPI interface to use when communicating to this
+   * @param the_spi The SPI interface to use when communicating to this
    * touchscreen. Defaults to [SPI], the default SPI interface on Arduino
    * boards. This is often connected to pins labeled `SCK`, `MOSI`, and `MISO`
    * on the physical board. For example, on Arduino Uno the MISO of the default
