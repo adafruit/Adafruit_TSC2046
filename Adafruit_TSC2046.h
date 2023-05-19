@@ -156,7 +156,6 @@
 #include <Adafruit_SPIDevice.h>
 #include <stdint.h>
 
-
 /*!
  * @brief The type returned by Adafruit_TSC2046::getPoint.
  *
@@ -462,15 +461,15 @@ union Command {
   // datasheet, because bitfield structs are least-significant-field first.
   struct {
     /*!
-     * PD0: This bit is technically for enabling (HIGH) or disabling (LOW) the ADC,
-     * but when PD1 and PD0 are both 0, then it leaves the ADC off *between* conversions,
-     * but powers it on *during* conversions. According to the datasheet the ADC is able
-     * to power up instantly and there are no delays incured by leaving the ADC powered
-     * off between conversions. Leaving the ADC on is intended for certain strategies
-     * that use external capacitors to filter out touchscreen noise.
-     * This doesn't apply to us, but there is one more consideration, which is
-     * that the PENIRQ' output used to trigger interrupts is disabled if this
-     * bit is HIGH (1).
+     * PD0: This bit is technically for enabling (HIGH) or disabling (LOW) the
+     * ADC, but when PD1 and PD0 are both 0, then it leaves the ADC off
+     * *between* conversions, but powers it on *during* conversions. According
+     * to the datasheet the ADC is able to power up instantly and there are no
+     * delays incured by leaving the ADC powered off between conversions.
+     * Leaving the ADC on is intended for certain strategies that use external
+     * capacitors to filter out touchscreen noise. This doesn't apply to us, but
+     * there is one more consideration, which is that the PENIRQ' output used to
+     * trigger interrupts is disabled if this bit is HIGH (1).
      */
     uint8_t enableOrIdleADC : 1;
 
@@ -493,13 +492,12 @@ union Command {
      * A2:A0: the channel select/"address" bits, which control the multiplexer
      * output. This will be one of the `ADDR` values near the top of the file.
      */
-    uint8_t addr  : 3;
+    uint8_t addr : 3;
 
     /*! START bit, always 1. */
     uint8_t start : 1;
   };
   uint8_t word;
 };
-
 
 #endif

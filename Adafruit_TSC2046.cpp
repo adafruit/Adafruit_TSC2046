@@ -244,7 +244,7 @@ uint16_t Adafruit_TSC2046::readCoord(uint8_t channelSelect) {
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
       _spiDev,
-      cmd.word,   // reg_addr
+      cmd.word,             // reg_addr
       ADDRBIT8_HIGH_TOREAD, // reg_type
       2,                    // Width: 2, to get the 12-bits we need.
       // It's a 12-bit value with the most-significant BIT first.
@@ -289,7 +289,7 @@ uint16_t Adafruit_TSC2046::readExtra(uint8_t channelSelect) {
 
   Adafruit_BusIO_Register controlReg = Adafruit_BusIO_Register(
       _spiDev,
-      controlCmd.word,   // reg_addr
+      controlCmd.word,      // reg_addr
       ADDRBIT8_HIGH_TOREAD, // reg_type
       2,                    // Width: 2, to get the 12-bits we need.
       // It's a 12-bit value with the most-significant BIT first.
