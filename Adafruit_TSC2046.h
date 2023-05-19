@@ -1,5 +1,5 @@
 /*!
- * @file TSC2046.h
+ * @file Adafruit_TSC2046.h
  *
  * @mainpage TI TSC2046 Resistive Touchscreen Library.
  *
@@ -256,20 +256,6 @@ public:
    * If you do not have a multimeter or otherwise don't have a measurement,
    * `400` (400Ω) is a reasonable value to use here.
    *
-   * @param vRef The voltage (in volts) connected to the TSC2046's VRef pin,
-   * if any. `-1` (the default if the argument is not provided) indicates that
-   * nothing is connected to the TSC2046's VRef pin. Connecting VRef to
-   * a voltage higher than 2.5V increases the accuracy of **non**-touchscreen
-   * reads (temperature, battery voltage, and auxiliary voltage), and also
-   * directly determines the maximum voltage value that can be measured by
-   * Adafruit_TSC2046::readAuxiliaryVoltage. It has no effect on touchscreen
-   * coordinate reads. \n
-   * The TSC2046's VRef pin should either be connected to the same supply
-   * as the TSC2046's Vin pin, or not connected at all (Vin should be connected
-   * to a 5V or 3.3V supply from the Arduino). If you do not connect the VRef
-   * pin, pass `-1` to this argument (which is also the default value if you do
-   * not pass this argument at all).
-   *
    * @param spiChipSelect The pin number on your board that you have connected
    * to the SPI CS (Chip Select) pin on the TSC2046. Defaults to the `SS` pin
    * if not provided, which is also the default chip select pin of the
@@ -297,8 +283,17 @@ public:
    * for Adafruit_TSC2046::begin's @p vRef parameter for more information.
    *
    * @param vRef The voltage in volts of the supply connected to the TSC2046's
-   * VRef pin. See the documentation for Adafruit_TSC2046::begin's @p vRef
-   * parameter for more information.
+   * VRef pin, if any. `-1` (the default if you don't call this function)
+   * indicates that nothing is connected to the TSC2046's VRef pin. Connecting
+   * VRef to a voltage higher than 2.5V increases the accuracy of
+   * **non**-touchscreen reads (temperature, battery voltage, and auxiliary
+   * voltage), and also directly determines the maximum voltage value that can
+   * be measured by Adafruit_TSC2046::readAuxiliaryVoltage. It has no effect
+   * on touchscreen coordinate reads. \n
+   * The TSC2046's VRef pin should either be connected to the same supply as
+   * the TSC2046's Vin pin, or not connected at all (Vin should be connected
+   * to a 5V or 3.3V supply from the Arduino). If you do not connect the VRef
+   * pin, either don't call this function at all, or pass `-1` to this argument.
    */
   void setVRef(float vRef);
 
