@@ -101,7 +101,7 @@
  * the direct X and Y coordinates as `point.x` and `point.y`. You may also
  * get the X and Y coordinates as percentages with `point.xPercent()` and
  * `point.yPercent()`. The pressure is in `point.z`, and its value *decreases*
- * as pressure *increases*.
+ * as physical pressure *increases*.
  *
  * @note Adafruit_TSC2046::begin has one particularly notable required
  * parameter, @p xResistance — the value you pass here is something you must
@@ -114,7 +114,7 @@
  * value for the @p xResistance argument. If you do not have a multimeter or
  * otherwise don't have a measurement, `400` (400Ω) is a reasonable value to
  * use here, though note that the pressure measurements returned by
- * Adafruit_TSC2046::getPoint will be inaccurate in that case.
+ * Adafruit_TSC2046::getPoint may not be accurate in that case.
  *
  * Below is a simple example; a more complete example can be found in the
  * `examples/` directory.
