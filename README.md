@@ -3,7 +3,7 @@
 This is the Adafruit TSC2046 Resistive Touchscreen Library for Arduino. The documentation can be found [here](https://adafruit.github.io/Adafruit_TSC2046).
 
 Tested with the Adafruit TSC2046 Breakout Board
-[<img src="assets/board.jpeg?raw=true" width=500px">](https://www.adafruit.com/product/5767)
+[<img src="assets/board.jpeg?raw=true" width="500px">](https://www.adafruit.com/product/5767)
 
 This chip uses SPI to communicate; at least 3 pins are required to interface. See the [documentation](https://adafruit.github.io/Adafruit_TSC2046/html/index.html#connecting)
 for more information.
